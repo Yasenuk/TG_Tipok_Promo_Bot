@@ -1,19 +1,39 @@
-import pino from 'pino';
+import pino, { type DestinationStream, type LoggerOptions } from 'pino';
 import { env, isProd } from '../config/env.js';
-
-export const logger = pino({
+ 
+const options: LoggerOptions = {
   level: env.LOG_LEVEL,
-  transport: isProd
-    ? undefined
-    : {
-      target: 'pino-pretty',
-      options: { colorize: true, translateTime: 'HH:MM:ss', ignore: 'pid,hostname' },
-    },
   base: undefined,
   redact: {
-    paths: ['BOT_TOKEN', '*.token', '*.phone'],
+    paths: [
+      'token',
+      '*.token',
+      'phone',
+      '*.phone',
+      'fullName',
+      '*.fullName',
+      'BOT_TOKEN',
+    ],
     censor: '[redacted]',
   },
-});
+};
 
+async function createStream(): Promise<DestinationStream | undefined> {
+  if (isProd) return undefined;
+ 
+  const { default: pretty } = await import('pino-pretty');
+ 
+  return pretty({
+    colorize: true,
+    translateTime: 'HH:MM:ss',
+    ignore: 'pid,hostname',
+    destination: process.stdout,
+    sync: true,
+  });
+}
+ 
+const stream = await createStream();
+ 
+export const logger = stream ? pino(options, stream) : pino(options);
+ 
 export type Logger = typeof logger;
