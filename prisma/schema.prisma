@@ -1,0 +1,367 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// КАМПАНІЇ
+// ─────────────────────────────────────────────
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  FINISHED
+}
+
+model Campaign {
+  id     String         @id @default(cuid())
+  slug   String         @unique // "hype", "chaser"
+  title  String
+  status CampaignStatus @default(DRAFT)
+
+  startsAt DateTime?
+  endsAt   DateTime?
+
+  /// Конфіг rules engine. Валідується zod при збереженні
+  /// { "strategies": [{ "type": "cyclic-threshold", "config": {...} }] }
+  rules Json
+
+  /// message_thread_id топіка в адмін-форум-групі
+  adminThreadId Int?
+
+  /// Префікс кодів цієї кампанії ("HY", "CH")
+  codePrefix String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  codes         Code[]
+  prizes        Prize[]
+  activations   Activation[]
+  participants  Participation[]
+  claims        PrizeClaim[]
+  draws         Draw[]
+  contents      Content[]
+  campaignStore CampaignStore[]
+
+  @@index([status])
+}
+
+// ─────────────────────────────────────────────
+// КОРИСТУВАЧІ
+// ─────────────────────────────────────────────
+
+model User {
+  id         String  @id @default(cuid())
+  telegramId BigInt  @unique
+  username   String?
+  fullName   String?
+  phone      String? @unique
+
+  consentAt DateTime?
+  isBlocked Boolean   @default(false)
+  blockedAt DateTime?
+
+  /// FSM-стан діалогу
+  state Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participations Participation[]
+  activations    Activation[]
+  claims         PrizeClaim[]
+  drawWinners    DrawWinner[]
+
+  @@index([phone])
+}
+
+/// Участь конкретного юзера в конкретній кампанії
+/// Лічильник активацій — ПО КАМПАНІЇ
+model Participation {
+  id         String @id @default(cuid())
+  userId     String
+  campaignId String
+
+  activationCount Int      @default(0)
+  joinedAt        DateTime @default(now())
+  lastActivityAt  DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, campaignId])
+  @@index([campaignId, activationCount])
+}
+
+// ─────────────────────────────────────────────
+// КОДИ ТА АКТИВАЦІЇ
+// ─────────────────────────────────────────────
+
+/// Перевірка колізій — на імпорті.
+model Code {
+  id         String @id @default(cuid())
+  campaignId String
+  value      String @unique
+
+  isUsed    Boolean   @default(false)
+  usedAt    DateTime?
+  batchName String? // для трекінгу партій друку
+
+  createdAt DateTime @default(now())
+
+  campaign   Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  activation Activation?
+
+  @@index([campaignId, isUsed])
+}
+
+/// 1 код = 1 запис = 1 квиток у розіграш
+model Activation {
+  id         String @id @default(cuid())
+  campaignId String
+  userId     String
+  codeId     String @unique
+
+  /// Порядковий номер активації цього юзера в цій кампанії (1, 2, 3...)
+  position Int
+
+  createdAt DateTime @default(now())
+
+  campaign    Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code        Code         @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  claim       PrizeClaim?
+  drawWinners DrawWinner[]
+
+  @@index([campaignId, userId])
+  @@index([campaignId, createdAt])
+}
+
+// ─────────────────────────────────────────────
+// ПРИЗИ
+// ─────────────────────────────────────────────
+
+enum PrizeKind {
+  GUARANTEED // за пороги/цикл
+  GRAND      // головні, через розіграш
+}
+
+model Prize {
+  id         String    @id @default(cuid())
+  campaignId String
+  key        String // "opener", "mug", "cap" — цим оперує rules engine
+  title      String
+  kind       PrizeKind @default(GUARANTEED)
+  sortOrder  Int       @default(0)
+
+  /// null = необмежено. Інакше бот не обіцяє те, чого нема
+  stock    Int?
+  reserved Int  @default(0) // зарезервовано під незавершені заявки
+  issued   Int  @default(0)
+
+  campaign Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  claims   PrizeClaim[]
+  winners  DrawWinner[]
+
+  @@unique([campaignId, key])
+}
+
+// ─────────────────────────────────────────────
+// ГЕОГРАФІЯ
+// ─────────────────────────────────────────────
+
+model City {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+
+  stores Store[]
+}
+
+model Store {
+  id       String  @id @default(cuid())
+  cityId   String
+  name     String
+  address  String
+  isActive Boolean @default(true)
+
+  /// chat_id менеджера
+  managerChatId BigInt?
+
+  city      City            @relation(fields: [cityId], references: [id])
+  claims    PrizeClaim[]
+  campaigns CampaignStore[]
+
+  @@index([cityId, isActive])
+}
+
+/// Обмеження магазинів по кампанії
+/// Немає жодного запису для кампанії = доступні всі активні магазини
+model CampaignStore {
+  campaignId String
+  storeId    String
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  store    Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, storeId])
+}
+
+// ─────────────────────────────────────────────
+// ЗАЯВКИ НА ВИДАЧУ
+// ─────────────────────────────────────────────
+
+enum ClaimStatus {
+  AWAITING_STORE    // приз призначено, юзер ще не обрав магазин
+  AWAITING_DELIVERY // магазин обрано, чекаємо менеджера
+  DELIVERED         // менеджер натиснув «Приз доставлено»
+  RECEIVED          // юзер підтвердив, що забрав
+  CANCELLED
+  EXPIRED
+}
+
+enum ClaimSource {
+  THRESHOLD // гарантований приз за кодами
+  DRAW      // розіграш
+  MANUAL    // видано адміном вручну
+}
+
+model PrizeClaim {
+  id         String @id @default(cuid())
+  campaignId String
+  userId     String
+  prizeId    String
+
+  status  ClaimStatus @default(AWAITING_STORE)
+  source  ClaimSource @default(THRESHOLD)
+  storeId String?
+
+  activationId String? @unique
+  drawWinnerId String? @unique
+
+  /// куди відправлено сповіщення в адмін-групу — щоб редагувати те саме повідомлення
+  adminChatId    BigInt?
+  adminMessageId Int?
+
+  deliveredByTelegramId BigInt?
+  deliveredAt           DateTime?
+  receivedAt            DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaign   Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prize      Prize       @relation(fields: [prizeId], references: [id])
+  store      Store?      @relation(fields: [storeId], references: [id])
+  activation Activation? @relation(fields: [activationId], references: [id])
+  drawWinner DrawWinner? @relation(fields: [drawWinnerId], references: [id])
+
+  @@index([campaignId, status])
+  @@index([userId, campaignId])
+}
+
+// ─────────────────────────────────────────────
+// РОЗІГРАШ
+// ─────────────────────────────────────────────
+
+model Draw {
+  id         String @id @default(cuid())
+  campaignId String
+  name       String
+
+  /// зберігаємо seed
+  seed             String
+  totalActivations Int
+  createdBy        BigInt?
+  createdAt        DateTime @default(now())
+
+  campaign Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  winners  DrawWinner[]
+}
+
+model DrawWinner {
+  id           String @id @default(cuid())
+  drawId       String
+  userId       String
+  activationId String
+  prizeId      String
+
+  notifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  draw       Draw        @relation(fields: [drawId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id])
+  activation Activation  @relation(fields: [activationId], references: [id])
+  prize      Prize       @relation(fields: [prizeId], references: [id])
+  claim      PrizeClaim?
+
+  @@unique([drawId, activationId])
+}
+
+// ─────────────────────────────────────────────
+// КОНТЕНТ (тексти в БД, без деплою)
+// ─────────────────────────────────────────────
+
+model Content {
+  id         String  @id @default(cuid())
+  campaignId String?
+  key        String // "welcome", "code.invalid", "prize.won"
+  locale     String  @default("uk")
+  value      String  @db.Text
+
+  updatedBy BigInt?
+  updatedAt DateTime @updatedAt
+
+  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, key, locale])
+  @@index([key])
+}
+
+// ─────────────────────────────────────────────
+// АДМІНИ ТА АУДИТ
+// ─────────────────────────────────────────────
+
+enum AdminRole {
+  SUPER   // все + керування кампаніями
+  MANAGER // видача призів, статистика
+}
+
+model Admin {
+  id         String    @id @default(cuid())
+  telegramId BigInt    @unique
+  name       String?
+  role       AdminRole @default(MANAGER)
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    BigInt?
+  action     String // "claim.delivered", "content.updated", "campaign.rules_changed"
+  entityType String?
+  entityId   String?
+  payload    Json?
+  createdAt  DateTime @default(now())
+
+  @@index([action, createdAt])
+  @@index([entityType, entityId])
+}
+
+/// Захист від брутфорсу кодів.
+model RateLimitEntry {
+  id        String    @id @default(cuid())
+  key       String    @unique // "code:<telegramId>"
+  hits      Int       @default(1)
+  windowAt  DateTime
+  blockedTo DateTime?
+}
