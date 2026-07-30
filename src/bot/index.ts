@@ -1,4 +1,4 @@
-import { Scenes, Telegraf } from 'telegraf';
+import { Composer, Scenes, Telegraf } from 'telegraf';
 import type { AppContext } from './context.js';
 import { env } from '../config/env.js';
 import { logger } from '../infra/logger.js';
@@ -11,8 +11,42 @@ import { sessionMiddleware } from './middleware/session.js';
 import { rateLimitMiddleware, startRateLimitCleanup } from './middleware/rate-limit.js';
 
 import { registrationScene } from './scenes/registration.scene.js';
+import { codeEntryScene } from './scenes/code-entry.scene.js';
+import { storeSelectScene } from './scenes/store-select.scene.js';
+
 import { startHandler } from './handlers/start.handler.js';
 import { menuHandler } from './handlers/menu.handler.js';
+import { prizeHandler } from './handlers/prize.handler.js';
+import { claimActions } from './admin/claim-actions.js';
+import { adminCommands } from './admin/commands.js';
+
+/**
+ * Клієнтська частина: реєстрація, коди, призи
+ */
+function createPrivateFlow(): Composer<AppContext> {
+  const flow = new Composer<AppContext>();
+
+  flow.use(userMiddleware);
+  flow.use(sessionMiddleware);
+  flow.use(rateLimitMiddleware);
+
+  const stage = new Scenes.Stage<AppContext>([
+    registrationScene,
+    codeEntryScene,
+    storeSelectScene,
+  ]);
+  flow.use(stage.middleware());
+
+  flow.use(startHandler);
+  flow.use(prizeHandler);
+  flow.use(menuHandler);
+
+  flow.on('message', async (ctx) => {
+    await ctx.reply_t('error.unknown_command');
+  });
+
+  return flow;
+}
 
 export function createBot(): Telegraf<AppContext> {
   const bot = new Telegraf<AppContext>(env.BOT_TOKEN, {
@@ -22,22 +56,25 @@ export function createBot(): Telegraf<AppContext> {
   bot.use(loggerMiddleware);
   bot.use(contentMiddleware);
   bot.use(errorHandlerMiddleware);
-  bot.use(userMiddleware);
-  bot.use(sessionMiddleware);
-  bot.use(rateLimitMiddleware);
 
-  const stage = new Scenes.Stage<AppContext>([registrationScene]);
-  bot.use(stage.middleware());
+  bot.use(claimActions);
+  bot.use(adminCommands);
 
-  bot.use(startHandler);
-  bot.use(menuHandler);
+  bot.action('noop', (ctx) => ctx.answerCbQuery());
 
-  // Невідомий текст поза сценами
+  bot.use(Composer.chatType('private', createPrivateFlow()));
+
+  /**
+   * У групах бот мовчить на все, що не його команда.
+   */
   bot.on('message', async (ctx) => {
-    await ctx.reply_t('error.unknown_command');
+    if (ctx.chat.type === 'private') return;
+
+    if ('text' in ctx.message && ctx.message.text.startsWith('/')) {
+      ctx.log?.debug({ text: ctx.message.text }, 'невідома команда в групі');
+    }
   });
 
-  // Помилки, що прорвались поза errorHandlerMiddleware
   bot.catch((error, ctx) => {
     logger.error({ error, updateId: ctx.update.update_id }, 'bot.catch');
   });
@@ -51,10 +88,25 @@ export async function launchBot(bot: Telegraf<AppContext>): Promise<void> {
   const me = await bot.telegram.getMe();
   logger.info({ username: me.username, id: me.id }, 'Бот автентифікований');
 
-  await bot.telegram.setMyCommands([
-    { command: 'start', description: 'Почати' },
-    { command: 'cancel', description: 'Скасувати поточну дію' },
-  ]);
+  // Команди для приватного чату
+  await bot.telegram.setMyCommands(
+    [
+      { command: 'start', description: 'Почати' },
+      { command: 'cancel', description: 'Скасувати поточну дію' },
+    ],
+    { scope: { type: 'all_private_chats' } },
+  );
+
+  // Окремий набір для груп — щоб менеджери бачили саме свої команди
+  await bot.telegram.setMyCommands(
+    [
+      { command: 'chatid', description: 'ID чату й топіка' },
+      { command: 'bind_topic', description: 'Прив’язати топік до кампанії' },
+      { command: 'campaigns', description: 'Список кампаній' },
+      { command: 'stats', description: 'Статистика' },
+    ],
+    { scope: { type: 'all_group_chats' } },
+  );
 
   void bot.launch({ dropPendingUpdates: true }, () => {
     logger.info('Long polling запущено');
