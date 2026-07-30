@@ -65,8 +65,7 @@ adminCommands.command('bind_topic', async (ctx) => {
   const threadId = ctx.message.message_thread_id;
   if (!threadId) {
     await ctx.reply(
-      'Виконай цю команду всередині топіка кампанії.\n' +
-        'Якщо топіків немає — увімкни їх у налаштуваннях групи (Topics).',
+      'Виконай цю команду всередині топіка кампанії.',
     );
     return;
   }
