@@ -1,0 +1,14 @@
+{
+  "strategies": [
+    {
+      "type": "fixed-threshold",
+      "config": {
+        "thresholds": [
+          { "at": 2, "prize": "opener" },
+          { "at": 4, "prize": "mug" },
+          { "at": 6, "prize": "cap" }
+        ]
+      }
+    }
+  ]
+}

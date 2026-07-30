@@ -1,0 +1,5 @@
+[
+  { "key": "opener", "title": "Відкривачка", "stock": null },
+  { "key": "mug",    "title": "Кружка",      "stock": null },
+  { "key": "cap",    "title": "Кепка",       "stock": null }
+]
