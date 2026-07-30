@@ -11,6 +11,42 @@ import type { ContentKey } from '../../domain/content/keys.js';
 export const adminCommands = new Composer<AppContext>();
 
 /**
+ * Показати ID групи
+ */
+adminCommands.command('chatid', async (ctx) => {
+  const chat = ctx.chat;
+  const threadId = 'message_thread_id' in ctx.message ? ctx.message.message_thread_id : undefined;
+  const isForum = 'is_forum' in chat ? chat.is_forum : false;
+
+  const lines = [
+    `<b>Chat ID:</b> <code>${chat.id}</code>`,
+    `<b>Тип:</b> ${chat.type}${isForum ? ' (форум ✅)' : ''}`,
+  ];
+
+  if (threadId) {
+    lines.push(`<b>Thread ID:</b> <code>${threadId}</code>`);
+  } else if (chat.type !== 'private') {
+    lines.push('<i>Це General або топіки вимкнені</i>');
+  }
+
+  lines.push('', `<b>Твій ID:</b> <code>${ctx.from.id}</code>`);
+
+  if (chat.type === 'supergroup' && !isForum) {
+    lines.push('', '⚠️ Топіки вимкнені. Увімкни їх у налаштуваннях групи.');
+  }
+  if (chat.type === 'group') {
+    lines.push(
+      '',
+      '⚠️ Це звичайна група, топіки тут недоступні.',
+      'Увімкни Topics у налаштуваннях — Telegram сам конвертує її в супергрупу,',
+      'і chat_id ЗМІНИТЬСЯ. Виконай /chatid ще раз після конвертації.',
+    );
+  }
+
+  await ctx.reply(lines.join('\n'), { parse_mode: 'HTML' });
+});
+
+/**
  * Прив'язка топіка до кампанії
  *
  * Виконується ВСЕРЕДИНІ потрібного топіка адмін-групи — бот бере

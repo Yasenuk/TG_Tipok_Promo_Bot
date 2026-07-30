@@ -23,7 +23,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "check:env": "tsx src/scripts/check-env.ts",
     "import:codes": "tsx src/scripts/import-codes.ts",
-    "campaign:create": "tsx src/scripts/create-campaign.ts"
+    "campaign:create": "tsx src/scripts/create-campaign.ts",
+    "check:db": "tsx src/scripts/check-db.ts"
   },
   "dependencies": {
     "@prisma/adapter-neon": "7.9.1",
