@@ -3,13 +3,14 @@
  */
 import { existsSync } from 'node:fs';
 import { connectWithRetry, prisma } from '../db/client.js';
+import { codeRepo } from '../db/repositories/code.repo.js';
 
 if (existsSync('.env')) process.loadEnvFile('.env');
 
 const SLUG = 'demo';
 const CODE_COUNT = 40;
 
-const makeCode = (i: number) => `DEMO${String(i).padStart(4, '0')}`;
+const makeCode = (i: number) => `TEST${String(i).padStart(4, '0')}`;
 
 async function main(): Promise<void> {
   if (process.env.NODE_ENV === 'production') {
@@ -21,12 +22,12 @@ async function main(): Promise<void> {
 
   const campaign = await prisma.campaign.upsert({
     where: { slug: SLUG },
-    update: { status: 'ACTIVE' },
+    update: { status: 'ACTIVE', codePrefix: 'TEST' },
     create: {
       slug: SLUG,
       title: 'DEMO — тестова акція',
       status: 'ACTIVE',
-      codePrefix: 'DEMO',
+      codePrefix: 'TEST',
       rules: {
         strategies: [
           {
@@ -74,19 +75,19 @@ async function main(): Promise<void> {
     }
   }
 
-  const codes = Array.from({ length: CODE_COUNT }, (_, i) => ({
-    value: makeCode(i + 1),
-    campaignId: campaign.id,
-    batchName: 'demo',
-  }));
-
-  const created = await prisma.code.createMany({ data: codes, skipDuplicates: true });
+  const created = await codeRepo.importMany(
+    Array.from({ length: CODE_COUNT }, (_, i) => ({
+      raw: makeCode(i + 1),
+      campaignId: campaign.id,
+      batchName: 'demo',
+    })),
+  );
 
   console.log(`
 ✅ Демо-кампанія готова
 
    Кампанія:  ${campaign.title} (${campaign.slug}) — ACTIVE
-   Коди:      ${makeCode(1)} … ${makeCode(CODE_COUNT)}  (нових: ${created.count})
+   Коди:      ${makeCode(1)} … ${makeCode(CODE_COUNT)}  (нових: ${created})
    Призи:     відкривачка ×2, кружка ×1, кепка ∞
    Магазини:  10 у Києві (перевірка пагінації)
 
@@ -94,10 +95,6 @@ async function main(): Promise<void> {
    2-й код  → відкривачка      8-й код  → відкривачка
    4-й код  → кружка          10-й код  → кружка (СКЛАД ПОРОЖНІЙ)
    6-й код  → кепка           12-й код  → кепка
-
-   На 14-му коді закінчаться й відкривачки.
-
-⚠️  Не забудь: /bind_topic demo у топіку адмін-групи
 `);
 }
 
