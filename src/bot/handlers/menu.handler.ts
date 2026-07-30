@@ -4,7 +4,8 @@ import type { AppContext } from '../context.js';
 import { userRepo } from '../../db/repositories/user.repo.js';
 import { contentService } from '../../domain/content/content.service.js';
 import { REGISTRATION_SCENE } from '../scenes/registration.scene.js';
-import { mainMenuKeyboard } from '../keyboards/main-menu.js';
+import { CODE_ENTRY_SCENE } from '../scenes/code-entry.scene.js';
+import { showMyPrizes, showMyProgress } from './prize.handler.js';
 
 export const menuHandler = new Composer<AppContext>();
 
@@ -18,24 +19,26 @@ menuHandler.on(message('text'), async (ctx, next) => {
     contentService.t('button.rules'),
   ]);
 
-  // Незареєстрованих на будь-яку кнопку відправляємо реєструватись
   const isMenuButton = [enterCode, myProgress, myPrizes, rules].includes(text);
-  if (isMenuButton && !userRepo.isRegistered(ctx.user)) {
+  if (!isMenuButton) return next();
+
+  // Незареєстрованих на будь-яку кнопку відправляємо реєструватись
+  if (!userRepo.isRegistered(ctx.user)) {
     await ctx.scene.enter(REGISTRATION_SCENE);
     return;
   }
 
   switch (text) {
     case enterCode:
-      await ctx.reply_t('code.ask');
+      await ctx.scene.enter(CODE_ENTRY_SCENE);
       return;
 
     case myProgress:
-      await ctx.reply_t('prize.none');
+      await showMyProgress(ctx);
       return;
 
     case myPrizes:
-      await ctx.reply_t('prize.none');
+      await showMyPrizes(ctx);
       return;
 
     case rules:
