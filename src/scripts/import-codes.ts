@@ -7,7 +7,7 @@
  * CSV: одна колонка з кодами, заголовок необов'язковий
  */
 import { existsSync, readFileSync } from 'node:fs';
-import { prisma } from '../db/client.js';
+import { connectWithRetry, prisma } from '../db/client.js';
 import { codeRepo } from '../db/repositories/code.repo.js';
 import { campaignRepo } from '../db/repositories/campaign.repo.js';
 import { normalizeCode, looksLikeCode } from '../domain/codes/normalize.js';
@@ -36,6 +36,8 @@ function parseArgs(): Args {
 }
 
 async function main(): Promise<void> {
+  await connectWithRetry();
+
   const args = parseArgs();
 
   if (!args.campaign || !args.file) {

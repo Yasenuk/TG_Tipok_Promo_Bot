@@ -5,7 +5,7 @@
  *     --prefix={XX} --rules=./rules/{name}.json --prizes=./rules/{name}-prizes.json
  */
 import { existsSync, readFileSync } from 'node:fs';
-import { prisma } from '../db/client.js';
+import { connectWithRetry, prisma } from '../db/client.js';
 import { validateCampaignRules } from '../domain/rules/engine.js';
 
 type PrizeInput = {
@@ -30,6 +30,8 @@ function readJson<T>(path: string): T {
 }
 
 async function main(): Promise<void> {
+  await connectWithRetry();
+
   const slug = arg('slug');
   const title = arg('title');
   const rulesPath = arg('rules');
