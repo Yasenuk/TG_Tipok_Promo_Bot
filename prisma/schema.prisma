@@ -109,6 +109,8 @@ model Code {
   campaignId String
   value      String @unique
 
+  displayValue String?
+
   isUsed    Boolean   @default(false)
   usedAt    DateTime?
   batchName String? // для трекінгу партій друку

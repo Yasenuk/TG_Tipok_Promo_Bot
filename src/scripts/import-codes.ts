@@ -3,96 +3,98 @@
  *
  *   npm run import:codes -- --campaign=hype --file=./codes.csv --batch="друк-1"
  *   npm run import:codes -- --campaign=hype --file=./codes.csv --dry-run
- *
- * CSV: одна колонка з кодами, заголовок необов'язковий
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { connectWithRetry, prisma } from '../db/client.js';
 import { codeRepo } from '../db/repositories/code.repo.js';
 import { campaignRepo } from '../db/repositories/campaign.repo.js';
 import { normalizeCode, looksLikeCode } from '../domain/codes/normalize.js';
-
+ 
 type Args = {
   campaign?: string;
   file?: string;
   batch?: string;
   dryRun: boolean;
 };
-
+ 
 function parseArgs(): Args {
   const args: Args = { dryRun: false };
-
+ 
   for (const raw of process.argv.slice(2)) {
     const [key, ...valueParts] = raw.replace(/^--/, '').split('=');
     const value = valueParts.join('=');
-
+ 
     if (key === 'campaign') args.campaign = value;
     else if (key === 'file') args.file = value;
     else if (key === 'batch') args.batch = value;
     else if (key === 'dry-run') args.dryRun = true;
   }
-
+ 
   return args;
 }
-
+ 
 async function main(): Promise<void> {
-  await connectWithRetry();
-
   const args = parseArgs();
-
+ 
   if (!args.campaign || !args.file) {
     console.error(
       'Використання: --campaign=<slug> --file=<path.csv> [--batch=назва] [--dry-run]',
     );
     process.exit(1);
   }
-
+ 
   if (!existsSync(args.file)) {
     console.error(`❌ Файл не знайдено: ${args.file}`);
     process.exit(1);
   }
-
+ 
+  await connectWithRetry();
+ 
   const campaign = await campaignRepo.findBySlug(args.campaign);
   if (!campaign) {
     console.error(`❌ Кампанію «${args.campaign}» не знайдено.`);
     process.exit(1);
   }
-
+ 
   const raw = readFileSync(args.file, 'utf8');
   const lines = raw
     .split(/\r?\n/)
     .map((l) => l.split(/[,;\t]/)[0]?.trim() ?? '')
     .filter(Boolean);
-
-  // Заголовок відсіюємо, якщо перший рядок не схожий на код
+ 
   const first = lines[0];
   if (first && !looksLikeCode(normalizeCode(first))) lines.shift();
-
+ 
   const seen = new Set<string>();
   const valid: string[] = [];
   const invalid: string[] = [];
   const dupInFile: string[] = [];
-
+ 
   for (const line of lines) {
-    const value = normalizeCode(line);
-
-    if (!looksLikeCode(value)) {
+    const normalized = normalizeCode(line);
+ 
+    if (!looksLikeCode(normalized)) {
       invalid.push(line);
       continue;
     }
-    if (seen.has(value)) {
+ 
+    if (seen.has(normalized)) {
       dupInFile.push(line);
       continue;
     }
-
-    seen.add(value);
-    valid.push(value);
+ 
+    seen.add(normalized);
+    valid.push(line);
   }
-
+ 
   const existing = await codeRepo.findExistingValues(valid);
-  const collisions = valid.filter((v) => existing.has(v));
-  const fresh = valid.filter((v) => !existing.has(v));
-
+  const collisions = valid.filter((v) => existing.has(normalizeCode(v)));
+  const fresh = valid.filter((v) => !existing.has(normalizeCode(v)));
+ 
+  const collapsed = valid.filter(
+    (v) => normalizeCode(v) !== v.trim().toUpperCase().replace(/[^A-Z0-9]/g, ''),
+  );
+ 
   console.log(`\n📄 Файл:        ${args.file}`);
   console.log(`🎯 Кампанія:    ${campaign.title} (${campaign.slug})`);
   console.log(`📦 Партія:      ${args.batch ?? '—'}`);
@@ -100,35 +102,46 @@ async function main(): Promise<void> {
   if (collisions.length) console.log(`⚠️  Вже існують:      ${collisions.length}`);
   if (dupInFile.length) console.log(`⚠️  Дублі у файлі:    ${dupInFile.length}`);
   if (invalid.length) console.log(`❌ Некоректні:        ${invalid.length}`);
-
+ 
+  if (collapsed.length) {
+    console.log(
+      `\n⚠️  ${collapsed.length} кодів змінились при нормалізації (O→0, I→1, L→1):`,
+    );
+    for (const line of collapsed.slice(0, 5)) {
+      console.log(`     ${line}  →  ${normalizeCode(line)}`);
+    }
+    console.log('     Це не помилка: пошук іде за правим варіантом,');
+    console.log('     а у вигрузці показується лівий — як на упаковці.');
+  }
+ 
   if (invalid.length) {
     console.log(`\nПриклади некоректних: ${invalid.slice(0, 5).join(', ')}`);
   }
   if (collisions.length) {
     console.log(`Приклади колізій:     ${collisions.slice(0, 5).join(', ')}`);
   }
-
+ 
   if (args.dryRun) {
     console.log('\n🔍 dry-run — нічого не записано.');
     return;
   }
-
+ 
   if (fresh.length === 0) {
     console.log('\nНічого імпортувати.');
     return;
   }
-
+ 
   const imported = await codeRepo.importMany(
-    fresh.map((value) => ({
-      value,
+    fresh.map((line) => ({
+      raw: line,
       campaignId: campaign.id,
-      ...(args.batch ? { batchName: args.batch } : {}),
+      batchName: args.batch,
     })),
   );
-
+ 
   console.log(`\n🎉 Імпортовано: ${imported}`);
 }
-
+ 
 main()
   .then(() => prisma.$disconnect())
   .catch(async (error: unknown) => {
