@@ -1,0 +1,44 @@
+import { prisma } from '../client.js';
+import type { City, Store } from '../../generated/prisma/client.js';
+
+export const storeRepo = {
+  /**
+   * Міста, де для цієї кампанії є хоч один активний магазин
+   *
+   * Якщо для кампанії не заведено жодного CampaignStore — доступні всі
+   * активні магазини
+   */
+  async listCitiesForCampaign(campaignId: string): Promise<City[]> {
+    const restricted = await prisma.campaignStore.count({ where: { campaignId } });
+
+    return prisma.city.findMany({
+      where: {
+        isActive: true,
+        stores: {
+          some:
+            restricted > 0
+              ? { isActive: true, campaigns: { some: { campaignId } } }
+              : { isActive: true },
+        },
+      },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    });
+  },
+
+  async listStores(cityId: string, campaignId: string): Promise<Store[]> {
+    const restricted = await prisma.campaignStore.count({ where: { campaignId } });
+
+    return prisma.store.findMany({
+      where: {
+        cityId,
+        isActive: true,
+        ...(restricted > 0 ? { campaigns: { some: { campaignId } } } : {}),
+      },
+      orderBy: { name: 'asc' },
+    });
+  },
+
+  findById(id: string): Promise<(Store & { city: City }) | null> {
+    return prisma.store.findUnique({ where: { id }, include: { city: true } });
+  },
+};
