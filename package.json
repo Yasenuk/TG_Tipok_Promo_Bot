@@ -24,7 +24,13 @@
     "check:env": "tsx src/scripts/check-env.ts",
     "import:codes": "tsx src/scripts/import-codes.ts",
     "campaign:create": "tsx src/scripts/create-campaign.ts",
-    "check:db": "tsx src/scripts/check-db.ts"
+    "check:db": "tsx src/scripts/check-db.ts",
+    "seed:demo": "tsx src/scripts/seed-demo.ts",
+    "reset:demo": "tsx src/scripts/reset-demo.ts",
+    "export": "tsx src/scripts/export.ts",
+    "draw": "tsx src/scripts/draw.ts",
+    "draw:notify": "tsx src/scripts/draw-notify.ts",
+    "draw:verify": "tsx src/scripts/draw-verify.ts"
   },
   "dependencies": {
     "@prisma/adapter-neon": "7.9.1",
