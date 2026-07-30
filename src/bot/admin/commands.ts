@@ -7,6 +7,7 @@ import { isAdmin, isSuperAdmin } from './guard.js';
 import { contentRepo } from '../../db/repositories/content.repo.js';
 import { invalidateContentCache } from '../../domain/content/content.service.js';
 import type { ContentKey } from '../../domain/content/keys.js';
+import { buildCampaignWorkbook } from '../../domain/export/xlsx.service.js';
 
 export const adminCommands = new Composer<AppContext>();
 
@@ -168,4 +169,42 @@ adminCommands.command('text', async (ctx) => {
   }
 
   await ctx.reply('Використання:\n/text list\n/text set <ключ> <текст>');
+});
+
+/**
+ * Вигрузка прямо в чат: /export <slug>
+ */
+adminCommands.command('export', async (ctx) => {
+  if (!(await isAdmin(ctx.from.id))) return;
+
+  const slug = ctx.message.text.split(/\s+/)[1];
+  if (!slug) {
+    await ctx.reply('Використання: /export <slug-кампанії>');
+    return;
+  }
+
+  const campaign = await campaignRepo.findBySlug(slug);
+  if (!campaign) {
+    await ctx.reply(`Кампанію «${slug}» не знайдено.`);
+    return;
+  }
+
+  await ctx.reply('Готую вигрузку…');
+
+  const workbook = await buildCampaignWorkbook(campaign.id);
+  const buffer = Buffer.from(await workbook.xlsx.writeBuffer());
+
+  const stamp = new Date().toISOString().slice(0, 10);
+
+  await ctx.replyWithDocument(
+    { source: buffer, filename: `${slug}-${stamp}.xlsx` },
+    {
+      caption:
+        `📊 ${campaign.title}\n\n` +
+        'Лист «Активації» — для розіграшу: 1 код = 1 рядок.',
+      ...(ctx.message.message_thread_id
+        ? { message_thread_id: ctx.message.message_thread_id }
+        : {}),
+    },
+  );
 });
