@@ -19,6 +19,11 @@ import { menuHandler } from './handlers/menu.handler.js';
 import { prizeHandler } from './handlers/prize.handler.js';
 import { claimActions } from './admin/claim-actions.js';
 import { adminCommands } from './admin/commands.js';
+import { confirmHandler } from './admin/confirm.handler.js';
+import { drawHandler } from './admin/draw.handler.js';
+import { campaignHandler } from './admin/campaign.handler.js';
+import { importHandler } from './admin/import.handler.js';
+import { startPendingCleanup } from './admin/pending.js';
 
 /**
  * Клієнтська частина: реєстрація, коди, призи
@@ -58,15 +63,16 @@ export function createBot(): Telegraf<AppContext> {
   bot.use(errorHandlerMiddleware);
 
   bot.use(claimActions);
+  bot.use(confirmHandler);
   bot.use(adminCommands);
+  bot.use(drawHandler);
+  bot.use(campaignHandler);
+  bot.use(importHandler);
 
   bot.action('noop', (ctx) => ctx.answerCbQuery());
 
   bot.use(Composer.chatType('private', createPrivateFlow()));
 
-  /**
-   * У групах бот мовчить на все, що не його команда.
-   */
   bot.on('message', async (ctx) => {
     if (ctx.chat.type === 'private') return;
 
@@ -80,6 +86,7 @@ export function createBot(): Telegraf<AppContext> {
   });
 
   startRateLimitCleanup();
+  startPendingCleanup();
 
   return bot;
 }
@@ -101,9 +108,13 @@ export async function launchBot(bot: Telegraf<AppContext>): Promise<void> {
   await bot.telegram.setMyCommands(
     [
       { command: 'chatid', description: 'ID чату й топіка' },
-      { command: 'bind_topic', description: 'Прив’язати топік до кампанії' },
       { command: 'campaigns', description: 'Список кампаній' },
+      { command: 'campaign', description: 'activate | pause | finish <slug>' },
       { command: 'stats', description: 'Статистика' },
+      { command: 'prizes', description: 'Склад призів кампанії' },
+      { command: 'draw', description: 'Розіграш головних призів' },
+      { command: 'export', description: 'Вигрузка .xlsx' },
+      { command: 'bind_topic', description: 'Прив’язати топік до кампанії' },
     ],
     { scope: { type: 'all_group_chats' } },
   );
