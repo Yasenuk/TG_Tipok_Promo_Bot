@@ -6,6 +6,7 @@ import { prisma } from '../../db/client.js';
 import { putPending, takePending } from './pending.js';
 import { encodeCallback } from '../keyboards/callback.js';
 import type { CampaignStatus } from '../../generated/prisma/client.js';
+import { replyCampaignNotFound } from './campaign-helpers.js';
 
 export const campaignHandler = new Composer<AppContext>();
 
@@ -60,7 +61,7 @@ campaignHandler.command('campaign', async (ctx) => {
 
   const campaign = await campaignRepo.findBySlug(slug);
   if (!campaign) {
-    await ctx.reply(`❌ Кампанію «${slug}» не знайдено.`);
+    await replyCampaignNotFound(ctx, slug);
     return;
   }
 
@@ -85,7 +86,7 @@ campaignHandler.command('campaign', async (ctx) => {
     }
   }
 
-  const pendingId = putPending<CampaignPending>('campaign', ctx.from.id, {
+  const pendingId = await putPending<CampaignPending>('campaign', ctx.from.id, {
     slug,
     title: campaign.title,
     status,
@@ -116,7 +117,7 @@ export async function confirmCampaign(
   ctx: AppContext,
   pendingId: string,
 ): Promise<void> {
-  const taken = takePending<CampaignPending>('campaign', pendingId, ctx.from!.id);
+  const taken = await takePending<CampaignPending>('campaign', pendingId, ctx.from!.id);
 
   if (!taken.ok) {
     await ctx.answerCbQuery(

@@ -1,5 +1,13 @@
 /**
- * Типізований callback_data
+ * Типізований callback_data.
+ *
+ * Telegram обмежує callback_data 64 БАЙТАМИ. cuid — це 25 символів, тож
+ * два id в одному рядку вже впритул до межі. Правило: у callback кладемо
+ * максимум ОДИН id, решту контексту тримаємо в сесії.
+ *
+ * Префікс версії (v1) дозволяє змінити формат і не зламати кнопки на
+ * повідомленнях, які висять у людей з минулого тижня: старий формат
+ * просто не розпізнається і ми чемно просимо почати спочатку.
  */
 
 export const CB_VERSION = '1';
@@ -15,7 +23,9 @@ export type CallbackAction =
   | { kind: 'received'; claimId: string }
   | { kind: 'consentAgree' }
   | { kind: 'confirm'; pendingId: string }
-  | { kind: 'cancel'; pendingId: string };
+  | { kind: 'cancel'; pendingId: string }
+  | { kind: 'fileAs'; pendingId: string; target: 'stores' | 'codes' }
+  | { kind: 'fileCampaign'; pendingId: string; index: number };
 
 const SEP = ':';
 
@@ -44,6 +54,10 @@ export function encodeCallback(action: CallbackAction): string {
         return `y${SEP}${action.pendingId}`;
       case 'cancel':
         return `n${SEP}${action.pendingId}`;
+      case 'fileAs':
+        return `fa${SEP}${action.pendingId}${SEP}${action.target === 'stores' ? 's' : 'c'}`;
+      case 'fileCampaign':
+        return `fc${SEP}${action.pendingId}${SEP}${action.index}`;
     }
   })();
 
@@ -85,6 +99,16 @@ export function decodeCallback(raw: string): CallbackAction | undefined {
       return arg ? { kind: 'confirm', pendingId: arg } : undefined;
     case 'n':
       return arg ? { kind: 'cancel', pendingId: arg } : undefined;
+    case 'fa': {
+      const [id, target] = arg.split(SEP);
+      if (!id || (target !== 's' && target !== 'c')) return undefined;
+      return { kind: 'fileAs', pendingId: id, target: target === 's' ? 'stores' : 'codes' };
+    }
+    case 'fc': {
+      const [id, index] = arg.split(SEP);
+      if (!id || index === undefined) return undefined;
+      return { kind: 'fileCampaign', pendingId: id, index: Number(index) };
+    }
     default:
       return undefined;
   }

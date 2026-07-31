@@ -1,85 +1,132 @@
 import { randomBytes } from 'node:crypto';
+import { prisma } from '../../db/client.js';
+import { logger } from '../../infra/logger.js';
 
-/**
- * Тимчасове сховище операцій, що чекають підтвердження
- */
-export type PendingKind = 'draw' | 'stores' | 'codes' | 'campaign' | string;
-
-type Entry<T> = {
-  kind: PendingKind;
-  ownerId: number;
-  payload: T;
-  expiresAt: number;
-};
+export type PendingKind = 'draw' | 'stores' | 'codes' | 'campaign' | 'file';
 
 const TTL_MS = 10 * 60_000;
-const store = new Map<string, Entry<unknown>>();
-
-function newId(): string {
-  return randomBytes(4).toString('hex');
-}
-
-export function putPending<T>(
-  kind: PendingKind,
-  ownerId: number,
-  payload: T,
-): string {
-  const id = newId();
-  store.set(id, { kind, ownerId, payload, expiresAt: Date.now() + TTL_MS });
-  return id;
-}
 
 export type TakeResult<T> =
   | { ok: true; payload: T }
   | { ok: false; reason: 'expired' | 'not_owner' };
 
-export function peekPendingKind(id: string): PendingKind | undefined {
-  const entry = store.get(id);
+function newId(): string {
+  return randomBytes(4).toString('hex');
+}
+
+function serialize(value: unknown): unknown {
+  return JSON.parse(
+    JSON.stringify(value, (_key, v: unknown) =>
+      typeof v === 'bigint' ? `${v.toString()}n` : v,
+    ),
+  );
+}
+
+function deserialize<T>(value: unknown): T {
+  return JSON.parse(JSON.stringify(value), (_key, v: unknown) => {
+    if (typeof v === 'string' && /^-?\d+n$/.test(v)) {
+      return BigInt(v.slice(0, -1));
+    }
+    return v;
+  }) as T;
+}
+
+export async function putPending<T>(
+  kind: PendingKind,
+  ownerId: number,
+  payload: T,
+): Promise<string> {
+  const id = newId();
+
+  await prisma.pendingAction.create({
+    data: {
+      id,
+      kind,
+      ownerId: BigInt(ownerId),
+      payload: serialize(payload) as never,
+      expiresAt: new Date(Date.now() + TTL_MS),
+    },
+  });
+
+  return id;
+}
+
+export async function peekPendingKind(
+  id: string,
+): Promise<PendingKind | undefined> {
+  const entry = await prisma.pendingAction.findUnique({ where: { id } });
 
   if (!entry) return undefined;
 
-  if (entry.expiresAt < Date.now()) {
-    store.delete(id);
+  if (entry.expiresAt < new Date()) {
+    await dropPending(id);
     return undefined;
   }
 
-  return entry.kind;
+  return entry.kind as PendingKind;
 }
 
-export function takePending<T>(
+export async function readPending<T>(
   id: string,
   kind: PendingKind,
   userId: number,
-): TakeResult<T> {
-  const entry = store.get(id);
+): Promise<TakeResult<T>> {
+  const entry = await prisma.pendingAction.findUnique({ where: { id } });
 
-  if (!entry || entry.expiresAt < Date.now()) {
-    store.delete(id);
+  if (!entry || entry.kind !== kind || entry.expiresAt < new Date()) {
     return { ok: false, reason: 'expired' };
   }
 
-  if (entry.kind !== kind) {
+  if (entry.ownerId !== BigInt(userId)) return { ok: false, reason: 'not_owner' };
+
+  return { ok: true, payload: deserialize<T>(entry.payload) };
+}
+
+export async function takePending<T>(
+  id: string,
+  kind: PendingKind,
+  userId: number,
+): Promise<TakeResult<T>> {
+  const entry = await prisma.pendingAction.findUnique({ where: { id } });
+
+  if (!entry || entry.expiresAt < new Date()) {
+    await dropPending(id);
     return { ok: false, reason: 'expired' };
   }
 
-  if (entry.ownerId !== userId) {
-    return { ok: false, reason: 'not_owner' };
-  }
+  if (entry.kind !== kind) return { ok: false, reason: 'expired' };
 
-  store.delete(id);
-  return { ok: true, payload: entry.payload as T };
+  if (entry.ownerId !== BigInt(userId)) return { ok: false, reason: 'not_owner' };
+
+  const deleted = await prisma.pendingAction.deleteMany({ where: { id } });
+  if (deleted.count === 0) return { ok: false, reason: 'expired' };
+
+  return { ok: true, payload: deserialize<T>(entry.payload) };
 }
 
-export function dropPending(id: string): void {
-  store.delete(id);
+export async function overwritePending<T>(id: string, payload: T): Promise<void> {
+  await prisma.pendingAction
+    .update({
+      where: { id },
+      data: {
+        payload: serialize(payload) as never,
+        expiresAt: new Date(Date.now() + TTL_MS),
+      },
+    })
+    .catch(() => undefined);
 }
 
-export function startPendingCleanup(intervalMs = 60_000): NodeJS.Timeout {
+export async function dropPending(id: string): Promise<void> {
+  await prisma.pendingAction.deleteMany({ where: { id } });
+}
+
+export function startPendingCleanup(intervalMs = 5 * 60_000): NodeJS.Timeout {
   const timer = setInterval(() => {
-    const now = Date.now();
-    for (const [id, entry] of store) {
-      if (entry.expiresAt < now) store.delete(id);
-    }
+    void prisma.pendingAction
+      .deleteMany({ where: { expiresAt: { lt: new Date() } } })
+      .catch((error: unknown) => {
+        logger.warn({ error }, 'не вдалося прибрати прострочені підтвердження');
+      });
   }, intervalMs);
 
   timer.unref();

@@ -6,9 +6,6 @@ import { confirmDraw } from './draw.handler.js';
 import { confirmCampaign } from './campaign.handler.js';
 import { confirmStoresImport, confirmCodesImport } from './import.handler.js';
 
-/**
- * Єдина точка обробки кнопок «підтвердити / скасувати»
- */
 export const confirmHandler = new Composer<AppContext>();
 
 confirmHandler.on('callback_query', async (ctx, next) => {
@@ -18,7 +15,7 @@ confirmHandler.on('callback_query', async (ctx, next) => {
   if (!action) return next();
 
   if (action.kind === 'cancel') {
-    dropPending(action.pendingId);
+    await dropPending(action.pendingId);
     await ctx.answerCbQuery('Скасовано');
     await ctx.editMessageReplyMarkup(undefined).catch(() => undefined);
     return;
@@ -26,9 +23,10 @@ confirmHandler.on('callback_query', async (ctx, next) => {
 
   if (action.kind !== 'confirm') return next();
 
-  const kind = peekPendingKind(action.pendingId);
+  const kind = await peekPendingKind(action.pendingId);
 
   if (!kind) {
+    ctx.log?.warn({ pendingId: action.pendingId }, 'підтвердження не знайдено');
     await ctx.answerCbQuery(
       'Термін підтвердження минув — повтори команду',
       { show_alert: true },

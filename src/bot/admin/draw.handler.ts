@@ -10,6 +10,7 @@ import { putPending, takePending } from './pending.js';
 import { encodeCallback } from '../keyboards/callback.js';
 import { broadcast } from '../../infra/queue.js';
 import { userRepo } from '../../db/repositories/user.repo.js';
+import { replyCampaignNotFound } from './campaign-helpers.js';
 
 export const drawHandler = new Composer<AppContext>();
 
@@ -47,7 +48,7 @@ drawHandler.command('draw', async (ctx) => {
 
   const campaign = await campaignRepo.findBySlug(slug);
   if (!campaign) {
-    await ctx.reply(`❌ Кампанію «${slug}» не знайдено.`);
+    await replyCampaignNotFound(ctx, slug);
     return;
   }
 
@@ -90,7 +91,7 @@ drawHandler.command('draw', async (ctx) => {
   const totalPrizes = prizes.reduce((sum, p) => sum + p.count, 0);
   const name = `Розіграш ${new Date().toLocaleDateString('uk-UA')}`;
 
-  const pendingId = putPending<DrawPending>('draw', ctx.from.id, {
+  const pendingId = await putPending<DrawPending>('draw', ctx.from.id, {
     campaignId: campaign.id,
     campaignTitle: campaign.title,
     name,
@@ -128,8 +129,6 @@ drawHandler.command('draw', async (ctx) => {
     lines.push(`<i>…і ще ${plan.winners.length - 25}</i>`);
   }
 
-  lines.push('', '⚠️ <b>Відкотити розіграш неможливо.</b>');
-
   await ctx.reply(lines.join('\n'), {
     parse_mode: 'HTML',
     ...Markup.inlineKeyboard([
@@ -147,7 +146,6 @@ drawHandler.command('draw', async (ctx) => {
   });
 });
 
-/** Список призів кампанії з ключами — щоб знати, що писати в /draw */
 drawHandler.command('prizes', async (ctx) => {
   if (!(await isSuperAdmin(ctx.from.id))) return;
 
@@ -159,7 +157,7 @@ drawHandler.command('prizes', async (ctx) => {
 
   const campaign = await campaignRepo.findBySlug(slug);
   if (!campaign) {
-    await ctx.reply(`❌ Кампанію «${slug}» не знайдено.`);
+    await replyCampaignNotFound(ctx, slug);
     return;
   }
 
@@ -169,7 +167,7 @@ drawHandler.command('prizes', async (ctx) => {
   });
 
   if (prizes.length === 0) {
-    await ctx.reply('У кампанії немає призів.');
+    await ctx.reply('У кампанії немає призів');
     return;
   }
 
@@ -193,7 +191,7 @@ export async function confirmDraw(
   ctx: AppContext,
   pendingId: string,
 ): Promise<void> {
-  const taken = takePending<DrawPending>('draw', pendingId, ctx.from!.id);
+  const taken = await takePending<DrawPending>('draw', pendingId, ctx.from!.id);
 
   if (!taken.ok) {
     await ctx.answerCbQuery(

@@ -359,6 +359,19 @@ model AuditLog {
   @@index([entityType, entityId])
 }
 
+model PendingAction {
+  id      String @id
+  kind    String
+  ownerId BigInt
+
+  payload Json
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
 /// Захист від брутфорсу кодів.
 model RateLimitEntry {
   id        String    @id @default(cuid())
