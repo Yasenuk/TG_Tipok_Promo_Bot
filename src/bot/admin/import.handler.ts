@@ -104,7 +104,7 @@ async function handleStores(
     return;
   }
 
-  const pendingId = putPending<StoreImportPreview>('stores', ctx.from.id, preview);
+  const pendingId = putPending<StoreImportPreview>('stores', ctx.from!.id, preview);
 
   const lines = [
     '📍 <b>Імпорт магазинів</b>',
@@ -140,7 +140,7 @@ async function handleCodes(
   batchName?: string,
 ): Promise<void> {
   if (!slug) {
-    await ctx.reply('Вкажи кампанію: /import_codes <slug> [назва партії]');
+    await ctx.reply('/import_codes <slug> [назва партії]');
     return;
   }
 
@@ -194,7 +194,7 @@ async function handleCodes(
     return;
   }
 
-  const pendingId = putPending<CodesPending>('codes', ctx.from.id, {
+  const pendingId = putPending<CodesPending>('codes', ctx.from!.id, {
     campaignId: campaign.id,
     campaignTitle: campaign.title,
     fresh,

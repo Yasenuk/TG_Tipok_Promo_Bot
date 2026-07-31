@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 /**
  * Тимчасове сховище операцій, що чекають підтвердження
  */
-export type PendingKind = 'draw' | 'stores' | 'codes' | 'campaign';
+export type PendingKind = 'draw' | 'stores' | 'codes' | 'campaign' | string;
 
 type Entry<T> = {
   kind: PendingKind;

@@ -39,8 +39,6 @@ adminCommands.command('chatid', async (ctx) => {
     lines.push(
       '',
       '⚠️ Це звичайна група, топіки тут недоступні.',
-      'Увімкни Topics у налаштуваннях — Telegram сам конвертує її в супергрупу,',
-      'і chat_id ЗМІНИТЬСЯ. Виконай /chatid ще раз після конвертації.',
     );
   }
 
@@ -49,9 +47,6 @@ adminCommands.command('chatid', async (ctx) => {
 
 /**
  * Прив'язка топіка до кампанії
- *
- * Виконується ВСЕРЕДИНІ потрібного топіка адмін-групи — бот бере
- * message_thread_id прямо з повідомлення
  */
 adminCommands.command('bind_topic', async (ctx) => {
   if (!(await isSuperAdmin(ctx.from.id))) return;
