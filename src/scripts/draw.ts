@@ -18,6 +18,7 @@ import { connectWithRetry, prisma } from '../db/client.js';
 import { campaignRepo } from '../db/repositories/campaign.repo.js';
 import { drawService } from '../domain/draw/draw.service.js';
 import { formatPhone } from '../domain/users/phone.js';
+import { formatDate } from '../shared/datetime.js';
 
 if (existsSync('.env')) process.loadEnvFile('.env');
 
@@ -90,7 +91,6 @@ async function main(): Promise<void> {
    Один приз на людину:  ${uniqueWinners ? 'так' : 'ні'}
 
    SEED: ${seed}
-   ↑ опублікуй його — з ним будь-хто повторить розіграш і перевірить результат
 `);
 
   if (plan.winners.length < totalPrizes) {
@@ -124,7 +124,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const name = arg('name') ?? `Розіграш ${new Date().toLocaleDateString('uk-UA')}`;
+  const name = arg('name') ?? `Розіграш ${formatDate(new Date())}`;
   const drawId = await drawService.commit(campaign.id, name, plan);
 
   console.log(`

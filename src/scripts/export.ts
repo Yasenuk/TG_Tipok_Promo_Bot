@@ -9,6 +9,7 @@ import { dirname, resolve } from 'node:path';
 import { connectWithRetry, prisma } from '../db/client.js';
 import { campaignRepo } from '../db/repositories/campaign.repo.js';
 import { buildCampaignWorkbook } from '../domain/export/xlsx.service.js';
+import { formatIsoDate } from '../shared/datetime.js';
 
 if (existsSync('.env')) process.loadEnvFile('.env');
 
@@ -31,7 +32,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const stamp = new Date().toISOString().slice(0, 10);
+  const stamp = formatIsoDate();
   const out = resolve(arg('out') ?? `./exports/${slug}-${stamp}.xlsx`);
   mkdirSync(dirname(out), { recursive: true });
 
