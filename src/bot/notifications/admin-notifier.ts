@@ -6,6 +6,7 @@ import { formatPhone } from '../../domain/users/phone.js';
 import { env } from '../../config/env.js';
 import { logger } from '../../infra/logger.js';
 import { parseTelegramError } from '../../infra/telegram-errors.js';
+import { formatDateTime } from '../../shared/datetime.js';
 
 /** HTML-escape: у ПІБ або назві магазину може бути & або < */
 const esc = (s: string): string =>
@@ -34,7 +35,7 @@ function buildClaimMessage(claim: ClaimFull): string {
 
   lines.push('');
   lines.push(
-    `🕐 ${claim.createdAt.toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv' })}`,
+    `🕐 ${formatDateTime(claim.createdAt)}`,
   );
 
   return lines.join('\n');
@@ -59,6 +60,15 @@ export async function notifyAdminsAboutClaim(
   claim: ClaimFull,
 ): Promise<void> {
   const chatId = env.ADMIN_CHAT_ID;
+
+  if (chatId === undefined) {
+    logger.error(
+      { claimId: claim.id },
+      '⚠️ ADMIN_CHAT_ID не заданий — заявку нікому надіслати. Виконай /chatid у групі.',
+    );
+    return;
+  }
+
   const text = buildClaimMessage(claim);
   const keyboard = await deliverButton(claim);
   const threadId = claim.campaign.adminThreadId ?? undefined;
@@ -120,7 +130,7 @@ export async function markClaimMessageDelivered(
     buildClaimMessage(claim),
     '',
     `✅ <b>Видано</b> — ${esc(managerName)}`,
-    `🕐 ${(claim.deliveredAt ?? new Date()).toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv' })}`,
+    `🕐 ${formatDateTime(claim.deliveredAt ?? new Date())}`,
   ].join('\n');
 
   await telegram
