@@ -1,9 +1,9 @@
 import ExcelJS from 'exceljs';
 import { prisma } from '../../db/client.js';
 import { formatPhone } from '../users/phone.js';
+import { formatDateTime } from '../../shared/datetime.js';
 
-const KYIV = 'Europe/Kyiv';
-const dt = (d: Date): string => d.toLocaleString('uk-UA', { timeZone: KYIV });
+const dt = formatDateTime;
 
 const CLAIM_STATUS_UA: Record<string, string> = {
   AWAITING_STORE: 'чекає вибору магазину',
@@ -64,7 +64,7 @@ export async function buildCampaignWorkbook(
   activations.forEach((a, i) => {
     sheet.addRow({
       n: i + 1,
-      code: a.code.value,
+      code: a.code.displayValue ?? a.code.value,
       name: a.user.fullName ?? '',
       phone: a.user.phone ? formatPhone(a.user.phone) : '',
       username: a.user.username ? `@${a.user.username}` : '',
