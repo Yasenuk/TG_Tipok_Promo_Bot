@@ -1,6 +1,9 @@
 import { randomBytes } from 'node:crypto';
 import { prisma } from '../../db/client.js';
 import { logger } from '../../infra/logger.js';
+import { asPendingId, type PendingId } from '../../shared/pending-id.js';
+
+export { asPendingId, type PendingId };
 
 export type PendingKind = 'draw' | 'stores' | 'codes' | 'campaign' | 'file';
 
@@ -10,8 +13,8 @@ export type TakeResult<T> =
   | { ok: true; payload: T }
   | { ok: false; reason: 'expired' | 'not_owner' };
 
-function newId(): string {
-  return randomBytes(4).toString('hex');
+function newId(): PendingId {
+  return asPendingId(randomBytes(4).toString('hex'));
 }
 
 function serialize(value: unknown): unknown {
@@ -35,7 +38,7 @@ export async function putPending<T>(
   kind: PendingKind,
   ownerId: number,
   payload: T,
-): Promise<string> {
+): Promise<PendingId> {
   const id = newId();
 
   await prisma.pendingAction.create({
@@ -52,7 +55,7 @@ export async function putPending<T>(
 }
 
 export async function peekPendingKind(
-  id: string,
+  id: PendingId,
 ): Promise<PendingKind | undefined> {
   const entry = await prisma.pendingAction.findUnique({ where: { id } });
 
@@ -67,8 +70,8 @@ export async function peekPendingKind(
 }
 
 export async function readPending<T>(
-  id: string,
   kind: PendingKind,
+  id: PendingId,
   userId: number,
 ): Promise<TakeResult<T>> {
   const entry = await prisma.pendingAction.findUnique({ where: { id } });
@@ -83,8 +86,8 @@ export async function readPending<T>(
 }
 
 export async function takePending<T>(
-  id: string,
   kind: PendingKind,
+  id: PendingId,
   userId: number,
 ): Promise<TakeResult<T>> {
   const entry = await prisma.pendingAction.findUnique({ where: { id } });
@@ -104,7 +107,10 @@ export async function takePending<T>(
   return { ok: true, payload: deserialize<T>(entry.payload) };
 }
 
-export async function overwritePending<T>(id: string, payload: T): Promise<void> {
+export async function overwritePending<T>(
+  id: PendingId,
+  payload: T,
+): Promise<void> {
   await prisma.pendingAction
     .update({
       where: { id },
@@ -116,7 +122,7 @@ export async function overwritePending<T>(id: string, payload: T): Promise<void>
     .catch(() => undefined);
 }
 
-export async function dropPending(id: string): Promise<void> {
+export async function dropPending(id: PendingId): Promise<void> {
   await prisma.pendingAction.deleteMany({ where: { id } });
 }
 
