@@ -10,6 +10,7 @@ import { putPending, takePending } from './pending.js';
 import { encodeCallback } from '../keyboards/callback.js';
 import { broadcast } from '../../infra/queue.js';
 import { userRepo } from '../../db/repositories/user.repo.js';
+import { formatDate } from '../../shared/datetime.js';
 import { replyCampaignNotFound } from './campaign-helpers.js';
 
 export const drawHandler = new Composer<AppContext>();
@@ -79,7 +80,7 @@ drawHandler.command('draw', async (ctx) => {
   const tickets = await drawService.loadTickets(campaign.id);
 
   if (tickets.length === 0) {
-    await ctx.reply('❌ Немає жодної активації');
+    await ctx.reply('❌ Немає жодної активації — нема серед кого розігрувати');
     return;
   }
 
@@ -89,7 +90,7 @@ drawHandler.command('draw', async (ctx) => {
   });
 
   const totalPrizes = prizes.reduce((sum, p) => sum + p.count, 0);
-  const name = `Розіграш ${new Date().toLocaleDateString('uk-UA')}`;
+  const name = `Розіграш ${formatDate(new Date())}`;
 
   const pendingId = await putPending<DrawPending>('draw', ctx.from.id, {
     campaignId: campaign.id,
@@ -167,7 +168,7 @@ drawHandler.command('prizes', async (ctx) => {
   });
 
   if (prizes.length === 0) {
-    await ctx.reply('У кампанії немає призів');
+    await ctx.reply('У кампанії немає призів.');
     return;
   }
 

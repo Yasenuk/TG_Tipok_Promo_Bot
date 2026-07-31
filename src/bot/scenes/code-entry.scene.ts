@@ -6,6 +6,7 @@ import { contentService } from '../../domain/content/content.service.js';
 import { encodeCallback } from '../keyboards/callback.js';
 import { mainMenuKeyboard } from '../keyboards/main-menu.js';
 import type { CodeError } from '../../shared/errors.js';
+import { formatDate } from '../../shared/datetime.js';
 
 export const CODE_ENTRY_SCENE = 'code-entry';
 
@@ -86,7 +87,7 @@ async function replyCodeError(ctx: AppContext, error: CodeError): Promise<void> 
   switch (error.type) {
     case 'code.used_by_you':
       await ctx.reply_t('code.used_by_you', {
-        date: error.usedAt.toLocaleDateString('uk-UA'),
+        date: formatDate(error.usedAt),
       });
       return;
 
@@ -101,7 +102,7 @@ async function replyCodeError(ctx: AppContext, error: CodeError): Promise<void> 
 
     case 'code.campaign_not_started':
       await ctx.reply_t('code.campaign_not_started', {
-        date: error.startsAt.toLocaleDateString('uk-UA'),
+        date: formatDate(error.startsAt),
       });
       return;
 
