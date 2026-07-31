@@ -5,14 +5,16 @@ import { codeRepo } from '../../db/repositories/code.repo.js';
 import { prisma } from '../../db/client.js';
 import { isAdmin, isSuperAdmin } from './guard.js';
 import { contentRepo } from '../../db/repositories/content.repo.js';
+import { buildCampaignWorkbook } from '../../domain/export/xlsx.service.js';
+import { formatIsoDate } from '../../shared/datetime.js';
 import { invalidateContentCache } from '../../domain/content/content.service.js';
 import type { ContentKey } from '../../domain/content/keys.js';
-import { buildCampaignWorkbook } from '../../domain/export/xlsx.service.js';
+import { replyCampaignNotFound } from './campaign-helpers.js';
 
 export const adminCommands = new Composer<AppContext>();
 
 /**
- * Показати ID групи
+ * Показує id чату й топіка
  */
 adminCommands.command('chatid', async (ctx) => {
   const chat = ctx.chat;
@@ -67,7 +69,7 @@ adminCommands.command('bind_topic', async (ctx) => {
 
   const campaign = await campaignRepo.findBySlug(slug);
   if (!campaign) {
-    await ctx.reply(`Кампанію «${slug}» не знайдено.`);
+    await replyCampaignNotFound(ctx, slug);
     return;
   }
 
@@ -100,7 +102,7 @@ adminCommands.command('stats', async (ctx) => {
   const campaign = slug ? await campaignRepo.findBySlug(slug) : undefined;
 
   if (slug && !campaign) {
-    await ctx.reply(`Кампанію «${slug}» не знайдено.`);
+    await replyCampaignNotFound(ctx, slug);
     return;
   }
 
@@ -179,7 +181,7 @@ adminCommands.command('export', async (ctx) => {
 
   const campaign = await campaignRepo.findBySlug(slug);
   if (!campaign) {
-    await ctx.reply(`Кампанію «${slug}» не знайдено.`);
+    await replyCampaignNotFound(ctx, slug);
     return;
   }
 
@@ -188,7 +190,7 @@ adminCommands.command('export', async (ctx) => {
   const workbook = await buildCampaignWorkbook(campaign.id);
   const buffer = Buffer.from(await workbook.xlsx.writeBuffer());
 
-  const stamp = new Date().toISOString().slice(0, 10);
+  const stamp = formatIsoDate();
 
   await ctx.replyWithDocument(
     { source: buffer, filename: `${slug}-${stamp}.xlsx` },
