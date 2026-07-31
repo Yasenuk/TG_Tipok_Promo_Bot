@@ -1,14 +1,4 @@
-/**
- * Типізований callback_data.
- *
- * Telegram обмежує callback_data 64 БАЙТАМИ. cuid — це 25 символів, тож
- * два id в одному рядку вже впритул до межі. Правило: у callback кладемо
- * максимум ОДИН id, решту контексту тримаємо в сесії.
- *
- * Префікс версії (v1) дозволяє змінити формат і не зламати кнопки на
- * повідомленнях, які висять у людей з минулого тижня: старий формат
- * просто не розпізнається і ми чемно просимо почати спочатку.
- */
+import { asPendingId, type PendingId } from '../../shared/pending-id.js';
 
 export const CB_VERSION = '1';
 
@@ -22,10 +12,10 @@ export type CallbackAction =
   | { kind: 'deliver'; claimId: string }
   | { kind: 'received'; claimId: string }
   | { kind: 'consentAgree' }
-  | { kind: 'confirm'; pendingId: string }
-  | { kind: 'cancel'; pendingId: string }
-  | { kind: 'fileAs'; pendingId: string; target: 'stores' | 'codes' }
-  | { kind: 'fileCampaign'; pendingId: string; index: number };
+  | { kind: 'confirm'; pendingId: PendingId }
+  | { kind: 'cancel'; pendingId: PendingId }
+  | { kind: 'fileAs'; pendingId: PendingId; target: 'stores' | 'codes' }
+  | { kind: 'fileCampaign'; pendingId: PendingId; index: number };
 
 const SEP = ':';
 
@@ -96,18 +86,22 @@ export function decodeCallback(raw: string): CallbackAction | undefined {
     case 'ok':
       return { kind: 'consentAgree' };
     case 'y':
-      return arg ? { kind: 'confirm', pendingId: arg } : undefined;
+      return arg ? { kind: 'confirm', pendingId: asPendingId(arg) } : undefined;
     case 'n':
-      return arg ? { kind: 'cancel', pendingId: arg } : undefined;
+      return arg ? { kind: 'cancel', pendingId: asPendingId(arg) } : undefined;
     case 'fa': {
       const [id, target] = arg.split(SEP);
       if (!id || (target !== 's' && target !== 'c')) return undefined;
-      return { kind: 'fileAs', pendingId: id, target: target === 's' ? 'stores' : 'codes' };
+      return {
+        kind: 'fileAs',
+        pendingId: asPendingId(id),
+        target: target === 's' ? 'stores' : 'codes',
+      };
     }
     case 'fc': {
       const [id, index] = arg.split(SEP);
       if (!id || index === undefined) return undefined;
-      return { kind: 'fileCampaign', pendingId: id, index: Number(index) };
+      return { kind: 'fileCampaign', pendingId: asPendingId(id), index: Number(index) };
     }
     default:
       return undefined;
