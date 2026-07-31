@@ -18,7 +18,7 @@ import {
   putPending,
   readPending,
   takePending,
-  type PendingKind,
+  type PendingId,
 } from './pending.js';
 import { encodeCallback, decodeCallback } from '../keyboards/callback.js';
 import { replyCampaignNotFound } from './campaign-helpers.js';
@@ -32,7 +32,7 @@ type CodesPending = {
   batchName?: string;
 };
 
-function confirmKeyboard(pendingId: string) {
+function confirmKeyboard(pendingId: PendingId) {
   return Markup.inlineKeyboard([
     [
       Markup.button.callback('✅ Залити', encodeCallback({ kind: 'confirm', pendingId })),
@@ -156,10 +156,10 @@ importHandler.on('callback_query', async (ctx, next) => {
 
 async function handleFileAs(
   ctx: AppContext,
-  pendingId: string,
+  pendingId: PendingId,
   target: 'stores' | 'codes',
 ): Promise<void> {
-  const entry = await readPending<FilePending>('file', pendingId as PendingKind, ctx.from!.id);
+  const entry = await readPending<FilePending>('file', pendingId, ctx.from!.id);
 
   if (!entry.ok) {
     await ctx.answerCbQuery(
@@ -232,7 +232,7 @@ async function handleFileAs(
 
 async function handleFileCampaign(
   ctx: AppContext,
-  pendingId: string,
+  pendingId: PendingId,
   index: number,
 ): Promise<void> {
   const entry = await readPending<FilePending>('file', pendingId, ctx.from!.id);
@@ -413,7 +413,7 @@ async function handleCodes(
 /** Підтвердження імпорту магазинів */
 export async function confirmStoresImport(
   ctx: AppContext,
-  pendingId: string,
+  pendingId: PendingId,
 ): Promise<void> {
   const taken = await takePending<StoreImportPreview>('stores', pendingId, ctx.from!.id);
 
@@ -444,7 +444,7 @@ export async function confirmStoresImport(
 /** Підтвердження імпорту кодів */
 export async function confirmCodesImport(
   ctx: AppContext,
-  pendingId: string,
+  pendingId: PendingId,
 ): Promise<void> {
   const taken = await takePending<CodesPending>('codes', pendingId, ctx.from!.id);
 

@@ -6,7 +6,7 @@ import { prisma } from '../../db/client.js';
 import { drawService, type DrawPlan } from '../../domain/draw/draw.service.js';
 import { contentService } from '../../domain/content/content.service.js';
 import { formatPhone } from '../../domain/users/phone.js';
-import { putPending, takePending } from './pending.js';
+import { putPending, takePending, type PendingId } from './pending.js';
 import { encodeCallback } from '../keyboards/callback.js';
 import { broadcast } from '../../infra/queue.js';
 import { userRepo } from '../../db/repositories/user.repo.js';
@@ -190,7 +190,7 @@ drawHandler.command('prizes', async (ctx) => {
  */
 export async function confirmDraw(
   ctx: AppContext,
-  pendingId: string,
+  pendingId: PendingId,
 ): Promise<void> {
   const taken = await takePending<DrawPending>('draw', pendingId, ctx.from!.id);
 

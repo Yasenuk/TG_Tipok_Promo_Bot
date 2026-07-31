@@ -3,7 +3,7 @@ import type { AppContext } from '../context.js';
 import { isSuperAdmin } from './guard.js';
 import { campaignRepo } from '../../db/repositories/campaign.repo.js';
 import { prisma } from '../../db/client.js';
-import { putPending, takePending } from './pending.js';
+import { putPending, takePending, type PendingId } from './pending.js';
 import { encodeCallback } from '../keyboards/callback.js';
 import type { CampaignStatus } from '../../generated/prisma/client.js';
 import { replyCampaignNotFound } from './campaign-helpers.js';
@@ -115,7 +115,7 @@ campaignHandler.command('campaign', async (ctx) => {
 
 export async function confirmCampaign(
   ctx: AppContext,
-  pendingId: string,
+  pendingId: PendingId,
 ): Promise<void> {
   const taken = await takePending<CampaignPending>('campaign', pendingId, ctx.from!.id);
 
