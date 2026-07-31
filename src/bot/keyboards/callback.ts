@@ -13,7 +13,9 @@ export type CallbackAction =
   | { kind: 'chooseStore'; claimId: string }
   | { kind: 'deliver'; claimId: string }
   | { kind: 'received'; claimId: string }
-  | { kind: 'consentAgree' };
+  | { kind: 'consentAgree' }
+  | { kind: 'confirm'; pendingId: string }
+  | { kind: 'cancel'; pendingId: string };
 
 const SEP = ':';
 
@@ -38,6 +40,10 @@ export function encodeCallback(action: CallbackAction): string {
         return `r${SEP}${action.claimId}`;
       case 'consentAgree':
         return 'ok';
+      case 'confirm':
+        return `y${SEP}${action.pendingId}`;
+      case 'cancel':
+        return `n${SEP}${action.pendingId}`;
     }
   })();
 
@@ -75,6 +81,10 @@ export function decodeCallback(raw: string): CallbackAction | undefined {
       return arg ? { kind: 'received', claimId: arg } : undefined;
     case 'ok':
       return { kind: 'consentAgree' };
+    case 'y':
+      return arg ? { kind: 'confirm', pendingId: arg } : undefined;
+    case 'n':
+      return arg ? { kind: 'cancel', pendingId: arg } : undefined;
     default:
       return undefined;
   }
