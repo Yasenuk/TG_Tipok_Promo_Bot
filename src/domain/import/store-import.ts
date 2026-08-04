@@ -1,11 +1,18 @@
 import { prisma } from '../../db/client.js';
 import { parseTable, toRows } from './parse-table.js';
+import { looksHierarchical, parseHierarchy } from './parse-hierarchy.js';
 
 const COLUMNS = {
   city: ['місто', 'city', 'населений пункт', 'нас. пункт'],
   name: ['назва', 'магазин', 'name', 'store', 'точка'],
   address: ['адреса', 'address', 'вулиця'],
 } as const;
+
+const OPTIONAL_COLUMNS = ['name'] as const;
+
+function deriveName(address: string): string {
+  return address.split(',')[0]?.trim() || address;
+}
 
 export type StoreImportPreview = {
   ok: true;
@@ -14,7 +21,10 @@ export type StoreImportPreview = {
   stores: { city: string; name: string; address: string }[];
   duplicates: number;
   skipped: number;
+  citiesWithoutAddress: string[];
+  hierarchical: boolean;
 };
+
 
 export type StoreImportError = {
   ok: false;
@@ -30,9 +40,15 @@ export async function previewStoreImport(
   fileName: string,
 ): Promise<StoreImportPreview | StoreImportError> {
   const table = await parseTable(buffer, fileName);
+  if (table.length === 0) return { ok: false, reason: 'empty' };
+
+  if (looksHierarchical(table)) {
+    return previewHierarchy(buffer.toString('utf8'));
+  }
+
   if (table.length < 2) return { ok: false, reason: 'empty' };
 
-  const { rows, missing } = toRows(table, COLUMNS);
+  const { rows, missing } = toRows(table, COLUMNS, OPTIONAL_COLUMNS);
   if (missing.length > 0) return { ok: false, reason: 'missing_columns', missing };
 
   const seen = new Set<string>();
@@ -42,15 +58,14 @@ export async function previewStoreImport(
 
   for (const row of rows) {
     const city = row.city?.trim() ?? '';
-    const name = row.name?.trim() ?? '';
     const address = row.address?.trim() ?? '';
+    const name = row.name?.trim() || deriveName(address);
 
-    if (!city || !name || !address) {
+    if (!city || !address) {
       skipped++;
       continue;
     }
 
-    // Один магазин = місто + назва + адреса
     const key = `${city}|${name}|${address}`.toLowerCase();
     if (seen.has(key)) {
       duplicates++;
@@ -76,6 +91,51 @@ export async function previewStoreImport(
     stores,
     duplicates,
     skipped,
+    citiesWithoutAddress: [],
+    hierarchical: false,
+  };
+}
+
+async function previewHierarchy(
+  text: string,
+): Promise<StoreImportPreview | StoreImportError> {
+  const { stores, citiesWithoutStores } = parseHierarchy(text);
+
+  if (stores.length === 0 && citiesWithoutStores.length === 0) {
+    return { ok: false, reason: 'empty' };
+  }
+
+  const seen = new Set<string>();
+  const unique: typeof stores = [];
+  let duplicates = 0;
+
+  for (const store of stores) {
+    const key = `${store.city}|${store.address}`.toLowerCase();
+    if (seen.has(key)) {
+      duplicates++;
+      continue;
+    }
+    seen.add(key);
+    unique.push(store);
+  }
+
+  const cities = [...new Set([...unique.map((s) => s.city), ...citiesWithoutStores])];
+
+  const existing = await prisma.city.findMany({
+    where: { name: { in: cities } },
+    select: { name: true },
+  });
+  const existingNames = new Set(existing.map((c) => c.name));
+
+  return {
+    ok: true,
+    cities,
+    newCities: cities.filter((c) => !existingNames.has(c)),
+    stores: unique,
+    duplicates,
+    skipped: 0,
+    citiesWithoutAddress: citiesWithoutStores,
+    hierarchical: true,
   };
 }
 
@@ -83,6 +143,7 @@ export type StoreImportResult = {
   citiesCreated: number;
   storesCreated: number;
   storesUpdated: number;
+  placeholdersCreated: number;
 };
 
 /**
@@ -95,6 +156,7 @@ export async function applyStoreImport(
     citiesCreated: 0,
     storesCreated: 0,
     storesUpdated: 0,
+    placeholdersCreated: 0,
   };
 
   const cityIds = new Map<string, string>();
@@ -137,6 +199,24 @@ export async function applyStoreImport(
       data: { cityId, name: store.name, address: store.address },
     });
     result.storesCreated++;
+  }
+
+  for (const cityName of preview.citiesWithoutAddress) {
+    const cityId = cityIds.get(cityName);
+    if (!cityId) continue;
+
+    const anyStore = await prisma.store.count({ where: { cityId } });
+    if (anyStore > 0) continue;
+
+    await prisma.store.create({
+      data: {
+        cityId,
+        name: cityName,
+        address: '⚠️ адресу не вказано',
+        isActive: false,
+      },
+    });
+    result.placeholdersCreated++;
   }
 
   return result;

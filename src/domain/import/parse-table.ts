@@ -117,17 +117,23 @@ export function findColumn(
 export function toRows(
   table: string[][],
   columns: Record<string, readonly string[]>,
+  optional: readonly string[] = [],
 ): { rows: TableRow[]; missing: string[] } {
   const [header, ...body] = table;
-  if (!header) return { rows: [], missing: Object.keys(columns) };
+  if (!header) {
+    return { rows: [], missing: Object.keys(columns).filter((k) => !optional.includes(k)) };
+  }
 
   const indexes: Record<string, number> = {};
   const missing: string[] = [];
 
   for (const [key, aliases] of Object.entries(columns)) {
     const index = findColumn(header, aliases);
-    if (index === -1) missing.push(key);
-    else indexes[key] = index;
+    if (index === -1) {
+      if (!optional.includes(key)) missing.push(key);
+    } else {
+      indexes[key] = index;
+    }
   }
 
   if (missing.length > 0) return { rows: [], missing };

@@ -318,6 +318,14 @@ async function handleStores(
   if (preview.duplicates) lines.push(`⚠️ Дублів у файлі: ${preview.duplicates}`);
   if (preview.skipped) lines.push(`⚠️ Пропущено неповних рядків: ${preview.skipped}`);
 
+   if (preview.citiesWithoutAddress.length) {
+    lines.push(
+      '',
+      `<b>Міст без адрес: ${preview.citiesWithoutAddress.length}</b>`,
+      preview.citiesWithoutAddress.join(', '),
+    );
+  }
+
   await ctx.reply(lines.join('\n'), {
     parse_mode: 'HTML',
     ...confirmKeyboard(pendingId),
@@ -372,10 +380,6 @@ async function handleCodes(
   const existing = await codeRepo.findExistingValues(valid);
   const fresh = valid.filter((v) => !existing.has(normalizeCode(v)));
   const collisions = valid.length - fresh.length;
-
-  const collapsed = valid.filter(
-    (v) => normalizeCode(v) !== v.trim().toUpperCase().replace(/[^A-Z0-9]/g, ''),
-  );
 
   if (fresh.length === 0) {
     await ctx.reply(
