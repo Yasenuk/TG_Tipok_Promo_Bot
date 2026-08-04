@@ -30,7 +30,7 @@ export const DEFAULT_CONTENT = {
 
   // ── коди
   'code.ask': 'Введи код з упаковки:',
-  'code.accepted': 'Код прийнято ✅\n',
+  'code.accepted': 'Код прийнято ✅',
   'code.not_found': 'Такого коду немає.',
   'code.already_used': 'Цей код уже активований іншим учасником.',
   'code.used_by_you': 'Ти вже вводив цей код {date}.',
@@ -44,7 +44,7 @@ export const DEFAULT_CONTENT = {
   'prize.choose_city': 'У якому місті зручно забрати?',
   'prize.choose_store': 'Обери магазин у {city}:',
   'prize.confirmed':
-    'Заявку прийнято. Щойно приз буде в магазині «{store}» — ми напишемо.',
+    'Заявку прийнято ✅\n\n📍 {city}, {store}\n{address}\n\nЩойно приз буде в магазині — ми напишемо.',
   'prize.delivered':
     'Твій приз «{prize}» уже в магазині 🎉\n\n📍 {store}\n{address}',
   'prize.out_of_stock':

@@ -28,7 +28,11 @@ prizeHandler.on('callback_query', async (ctx, next) => {
   // Магазин уже обрано
   if (claim.status !== 'AWAITING_STORE') {
     await ctx.editMessageReplyMarkup(undefined).catch(() => undefined);
-    await ctx.reply_t('prize.confirmed', { store: claim.store?.name ?? '—' });
+    await ctx.reply_t('prize.confirmed', {
+      store: claim.store?.name ?? '—',
+      city: claim.store?.city.name ?? '',
+      address: claim.store?.address ?? '',
+    });
     return;
   }
 

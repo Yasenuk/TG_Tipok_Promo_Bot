@@ -38,6 +38,21 @@ export const storeRepo = {
     });
   },
 
+  async countByCity(campaignId: string): Promise<Map<string, number>> {
+    const restricted = await prisma.campaignStore.count({ where: { campaignId } });
+
+    const rows = await prisma.store.groupBy({
+      by: ['cityId'],
+      where: {
+        isActive: true,
+        ...(restricted > 0 ? { campaigns: { some: { campaignId } } } : {}),
+      },
+      _count: { _all: true },
+    });
+
+    return new Map(rows.map((r) => [r.cityId, r._count._all]));
+  },
+
   findById(id: string): Promise<(Store & { city: City }) | null> {
     return prisma.store.findUnique({ where: { id }, include: { city: true } });
   },

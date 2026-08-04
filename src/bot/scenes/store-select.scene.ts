@@ -56,8 +56,16 @@ async function showCities(ctx: AppContext, page: number): Promise<void> {
     return;
   }
 
+  const counts = await storeRepo.countByCity(claim.campaignId);
+
   const keyboard = paginatedKeyboard(
-    cities.map((c) => ({ id: c.id, label: c.name })),
+    cities.map((c) => {
+      const count = counts.get(c.id) ?? 0;
+      return {
+        id: c.id,
+        label: count > 1 ? `${c.name} · ${count}` : c.name,
+      };
+    }),
     {
       page,
       encodeItem: (id) => encodeCallback({ kind: 'city', cityId: id }),
@@ -125,10 +133,25 @@ storeSelectScene.on('callback_query', async (ctx) => {
       await showCities(ctx, action.page);
       return;
 
-    case 'city':
+    case 'city': {
       s.cityId = action.cityId;
+
+      const claim = s.claimId ? await claimRepo.findById(s.claimId) : null;
+      if (!claim) {
+        await ctx.scene.leave();
+        return;
+      }
+
+      const stores = await storeRepo.listStores(action.cityId, claim.campaignId);
+
+      if (stores.length === 1 && stores[0]) {
+        await confirmStore(ctx, stores[0].id);
+        return;
+      }
+
       await showStores(ctx, 0);
       return;
+    }
 
     case 'storePage':
       await showStores(ctx, action.page);
@@ -176,7 +199,11 @@ async function confirmStore(ctx: AppContext, storeId: string): Promise<void> {
 
   await ctx.reply_t(
     'prize.confirmed',
-    { store: store.name },
+    {
+      store: store.name,
+      city: store.city.name,
+      address: store.address,
+    },
     await mainMenuKeyboard(),
   );
 
