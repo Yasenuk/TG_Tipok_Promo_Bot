@@ -50,6 +50,7 @@ claimActions.on('callback_query', async (ctx, next) => {
     'prize.delivered',
     {
       prize: claim.prize.title,
+      city: claim.store?.city.name ?? '',
       store: claim.store?.name ?? '—',
       address: claim.store?.address ?? '',
     },

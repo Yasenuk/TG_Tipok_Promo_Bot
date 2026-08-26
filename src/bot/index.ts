@@ -23,6 +23,7 @@ import { confirmHandler } from './admin/confirm.handler.js';
 import { drawHandler } from './admin/draw.handler.js';
 import { campaignHandler } from './admin/campaign.handler.js';
 import { importHandler } from './admin/import.handler.js';
+import { adminsHandler } from './admin/admins.handler.js';
 import { startPendingCleanup } from './admin/pending.js';
 
 /**
@@ -68,6 +69,7 @@ export function createBot(): Telegraf<AppContext> {
   bot.use(drawHandler);
   bot.use(campaignHandler);
   bot.use(importHandler);
+  bot.use(adminsHandler);
 
   bot.action('noop', (ctx) => ctx.answerCbQuery());
 
