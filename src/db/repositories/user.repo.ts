@@ -1,5 +1,6 @@
 import { prisma } from '../client.js';
 import type { Prisma, User } from '../../generated/prisma/client.js';
+import { DbNull } from '@prisma/client/runtime/client';
 
 export type TelegramIdentity = {
   telegramId: bigint;
@@ -74,7 +75,7 @@ export const userRepo = {
 
   async clearState(telegramId: bigint): Promise<void> {
     await prisma.user
-      .update({ where: { telegramId }, data: { state: null } })
+      .update({ where: { telegramId }, data: { state: DbNull } })
       .catch(() => undefined);
   },
 };
