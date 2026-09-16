@@ -12,23 +12,16 @@ const CYRILLIC_LOOKALIKES: Record<string, string> = {
 };
 
 /**
- * Неоднозначні символи зводимо до одного варіанту.
- * Якщо коди ще друкуються — краще взагалі виключити O/0/I/1 з алфавіту.
+ * O/0 та I/L/1 НЕ зводимо: у кодах це різні символи,
+ * і злиття робить частину надрукованих карток недійсними.
  */
-const AMBIGUOUS: Record<string, string> = {
-  O: '0',
-  I: '1',
-  L: '1',
-};
-
 export function normalizeCode(raw: string): string {
-  let s = raw.trim().toUpperCase();
+  const s = raw.trim().toUpperCase();
 
-  s = [...s].map((ch) => CYRILLIC_LOOKALIKES[ch] ?? ch).join('');
-  s = s.replace(/[^A-Z0-9]/g, '');
-  s = [...s].map((ch) => AMBIGUOUS[ch] ?? ch).join('');
-
-  return s;
+  return [...s]
+    .map((ch) => CYRILLIC_LOOKALIKES[ch] ?? ch)
+    .join('')
+    .replace(/[^A-Z0-9]/g, '');
 }
 
 /** Груба перевірка перед походом у базу */

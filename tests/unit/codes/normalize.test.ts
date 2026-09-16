@@ -13,15 +13,19 @@ describe('normalizeCode', () => {
     expect(normalizeCode('НУ4А')).toBe('HY4A');
   });
 
-  it('зводить неоднозначні символи', () => {
-    expect(normalizeCode('OI')).toBe('01');
-    expect(normalizeCode('O0I1')).toBe('0011');
-    expect(normalizeCode('LOL')).toBe('101');
+  it('не зливає O/0 та I/L/1', () => {
+    expect(normalizeCode('O0I1L')).toBe('O0I1L');
+    expect(normalizeCode('HYOABC')).not.toBe(normalizeCode('HY0ABC'));
+    expect(normalizeCode('AL12')).not.toBe(normalizeCode('A112'));
   });
 
-  it('однаковий результат для всіх варіантів запису', () => {
-    const variants = ['hy-0abc', 'HY 0ABC', 'hy_oabc', 'HY-OABC'];
+  it('однаковий результат для варіантів запису одного коду', () => {
+    const variants = ['hy-0abc', 'HY 0ABC', 'hy_0abc', ' Hy-0AbC '];
     expect(new Set(variants.map(normalizeCode)).size).toBe(1);
+  });
+
+  it('кирилична О стає латинською O, а не нулем', () => {
+    expect(normalizeCode('НУОАВС')).toBe('HYOABC');
   });
 
   it('кириличний і латинський запис сходяться', () => {

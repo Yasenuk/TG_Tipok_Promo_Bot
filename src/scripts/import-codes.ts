@@ -91,7 +91,8 @@ async function main(): Promise<void> {
   const collisions = valid.filter((v) => existing.has(normalizeCode(v)));
   const fresh = valid.filter((v) => !existing.has(normalizeCode(v)));
  
-  const collapsed = valid.filter(
+  // Після нормалізації відрізняються тільки коди з кириличними літерами
+  const withCyrillic = valid.filter(
     (v) => normalizeCode(v) !== v.trim().toUpperCase().replace(/[^A-Z0-9]/g, ''),
   );
  
@@ -103,15 +104,14 @@ async function main(): Promise<void> {
   if (dupInFile.length) console.log(`⚠️  Дублі у файлі:    ${dupInFile.length}`);
   if (invalid.length) console.log(`❌ Некоректні:        ${invalid.length}`);
  
-  if (collapsed.length) {
+  if (withCyrillic.length) {
     console.log(
-      `\n⚠️  ${collapsed.length} кодів змінились при нормалізації (O→0, I→1, L→1):`,
+      `\n⚠️  ${withCyrillic.length} кодів містять кириличні літери — замінено на латиницю:`,
     );
-    for (const line of collapsed.slice(0, 5)) {
+    for (const line of withCyrillic.slice(0, 5)) {
       console.log(`     ${line}  →  ${normalizeCode(line)}`);
     }
-    console.log('     Це не помилка: пошук іде за правим варіантом,');
-    console.log('     а у вигрузці показується лівий — як на упаковці.');
+    console.log('     Перевір файл: у згенерованих кодах кирилиці бути не мало б.');
   }
  
   if (invalid.length) {
