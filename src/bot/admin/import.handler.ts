@@ -9,7 +9,12 @@ import {
   type StoreImportPreview,
 } from '../../domain/import/store-import.js';
 import { parseTable } from '../../domain/import/parse-table.js';
-import { normalizeCode, looksLikeCode } from '../../domain/codes/normalize.js';
+import {
+  columnLetter,
+  extractCodeLines,
+  isCodeCandidate,
+} from '../../domain/import/parse-codes.js';
+import { normalizeCode } from '../../domain/codes/normalize.js';
 import { codeRepo } from '../../db/repositories/code.repo.js';
 import { campaignRepo } from '../../db/repositories/campaign.repo.js';
 import {
@@ -272,7 +277,7 @@ importHandler.command(['import_stores', 'import_codes'], async (ctx) => {
   await ctx.reply(
     '📎 <b>Команду треба писати в підписі до файлу</b>, не окремо.\n\n' +
       '<b>Магазини:</b> колонки місто, назва, адреса\n' +
-      '<b>Коди:</b> одна колонка\n\n' +
+      '<b>Коди:</b> колонку з кодами бот знайде сам, заголовки й «№» не заважають\n\n' +
       'Формати: .csv, .xlsx (до 20 МБ)',
     { parse_mode: 'HTML' },
   );
@@ -351,10 +356,12 @@ async function handleCodes(
   }
 
   const table = await parseTable(buffer, fileName);
-  const lines = table.map((row) => row[0]?.trim() ?? '').filter(Boolean);
+  const { column, lines } = extractCodeLines(table);
 
-  const first = lines[0];
-  if (first && !looksLikeCode(normalizeCode(first))) lines.shift();
+  if (column === -1 || lines.length === 0) {
+    await ctx.reply('❌ Не знайшов у файлі колонки з кодами.');
+    return;
+  }
 
   const seen = new Set<string>();
   const valid: string[] = [];
@@ -362,12 +369,12 @@ async function handleCodes(
   let dupInFile = 0;
 
   for (const line of lines) {
-    const normalized = normalizeCode(line);
-
-    if (!looksLikeCode(normalized)) {
+    if (!isCodeCandidate(line)) {
       invalid++;
       continue;
     }
+
+    const normalized = normalizeCode(line);
     if (seen.has(normalized)) {
       dupInFile++;
       continue;
@@ -400,6 +407,7 @@ async function handleCodes(
     '🎟 <b>Імпорт кодів</b>',
     '',
     `Кампанія: <b>${campaign.title}</b>`,
+    `Колонка з кодами: <b>${columnLetter(column)}</b>`,
     batchName ? `Партія: ${batchName}` : '',
     '',
     `✅ До імпорту: <b>${fresh.length}</b>`,
