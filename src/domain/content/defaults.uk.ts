@@ -44,9 +44,9 @@ export const DEFAULT_CONTENT = {
   'prize.choose_city': 'У якому місті зручно забрати?',
   'prize.choose_store': 'Обери магазин у {city}:',
   'prize.confirmed':
-    'Заявку прийнято ✅\n\n📍 {city}, {store}\n{address}\n\nЩойно приз буде в магазині — ми напишемо.',
+    'Заявку прийнято ✅\n\n📍 {place}\n\nЩойно приз буде в магазині — ми напишемо.',
   'prize.delivered':
-    'Твій приз «{prize}» вже в магазині 🎉\n\n📍 {city}, {store}\n{address}',
+    'Твій приз «{prize}» вже в магазині 🎉\n\n📍 {place}',
   'prize.out_of_stock':
     'На жаль, цей приз закінчився. Але твої коди беруть участь у розіграші головних призів.',
   'prize.none': 'Поки що призів немає. Збирай коди!',

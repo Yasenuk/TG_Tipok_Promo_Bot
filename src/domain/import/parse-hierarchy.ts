@@ -1,6 +1,7 @@
 /**
  * Парсер ієрархічних списків магазинів
  */
+import { deriveStoreName } from '../stores/store-display.js';
 
 export type HierarchyStore = {
   city: string;
@@ -40,11 +41,6 @@ function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function deriveName(address: string): string {
-  const firstPart = address.split(',')[0]?.trim() ?? address;
-  return firstPart || address;
-}
-
 function isIndented(line: string): boolean {
   return /^[\s ]{2,}/.test(line) || /^\t/.test(line);
 }
@@ -73,7 +69,7 @@ export function parseHierarchy(text: string): HierarchyResult {
 
       stores.push({
         city: currentCity,
-        name: deriveName(address),
+        name: deriveStoreName(address),
         address,
       });
       withStores.add(currentCity);

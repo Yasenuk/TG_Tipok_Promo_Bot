@@ -5,6 +5,7 @@ import { codeService } from '../../domain/codes/code.service.js';
 import { contentService } from '../../domain/content/content.service.js';
 import { decodeCallback, encodeCallback } from '../keyboards/callback.js';
 import { STORE_SELECT_SCENE } from '../scenes/store-select.scene.js';
+import { formatStorePlace } from '../../domain/stores/store-display.js';
 
 export const prizeHandler = new Composer<AppContext>();
 
@@ -32,6 +33,7 @@ prizeHandler.on('callback_query', async (ctx, next) => {
       store: claim.store?.name ?? '—',
       city: claim.store?.city.name ?? '',
       address: claim.store?.address ?? '',
+      place: claim.store ? formatStorePlace(claim.store) : '—',
     });
     return;
   }
@@ -52,14 +54,16 @@ export async function showMyPrizes(ctx: AppContext): Promise<void> {
   const chooseStore = await contentService.t('button.choose_store');
 
   for (const claim of claims) {
+    const place = claim.store ? formatStorePlace(claim.store) : '—';
+
     const status = ((): string => {
       switch (claim.status) {
         case 'AWAITING_STORE':
           return '⏳ треба обрати магазин';
         case 'AWAITING_DELIVERY':
-          return `📦 веземо в «${claim.store?.name ?? '—'}»`;
+          return `📦 веземо в магазин: ${place}`;
         case 'DELIVERED':
-          return `✅ чекає в «${claim.store?.name ?? '—'}»`;
+          return `✅ чекає в магазині: ${place}`;
         case 'RECEIVED':
           return '🎉 отримано';
         default:

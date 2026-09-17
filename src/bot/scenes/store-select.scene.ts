@@ -7,6 +7,7 @@ import { notifyAdminsAboutClaim } from '../notifications/admin-notifier.js';
 import { decodeCallback, encodeCallback } from '../keyboards/callback.js';
 import { paginatedKeyboard } from '../keyboards/pagination.js';
 import { mainMenuKeyboard } from '../keyboards/main-menu.js';
+import { formatStore, formatStorePlace } from '../../domain/stores/store-display.js';
 
 export const STORE_SELECT_SCENE = 'store-select';
 
@@ -100,7 +101,7 @@ async function showStores(ctx: AppContext, page: number): Promise<void> {
   const back = await contentService.t('button.back');
 
   const keyboard = paginatedKeyboard(
-    stores.map((store) => ({ id: store.id, label: `${store.name} — ${store.address}` })),
+    stores.map((store) => ({ id: store.id, label: formatStore(store) })),
     {
       page,
       encodeItem: (id) => encodeCallback({ kind: 'store', storeId: id }),
@@ -203,6 +204,7 @@ async function confirmStore(ctx: AppContext, storeId: string): Promise<void> {
       store: store.name,
       city: store.city.name,
       address: store.address,
+      place: formatStorePlace(store),
     },
     await mainMenuKeyboard(),
   );

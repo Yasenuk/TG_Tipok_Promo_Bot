@@ -7,6 +7,7 @@ import { env } from '../../config/env.js';
 import { logger } from '../../infra/logger.js';
 import { parseTelegramError } from '../../infra/telegram-errors.js';
 import { formatDateTime } from '../../shared/datetime.js';
+import { formatStorePlace } from '../../domain/stores/store-display.js';
 
 /** HTML-escape: у ПІБ або назві магазину може бути & або < */
 const esc = (s: string): string =>
@@ -28,8 +29,7 @@ function buildClaimMessage(claim: ClaimFull): string {
   ];
 
   if (store) {
-    lines.push(`📍 ${esc(store.city.name)} — ${esc(store.name)}`);
-    lines.push(`   ${esc(store.address)}`);
+    lines.push(`📍 ${esc(formatStorePlace(store))}`);
     if (!store.isActive) lines.push('⚠️ <i>магазин позначено як неактивний</i>');
   }
 

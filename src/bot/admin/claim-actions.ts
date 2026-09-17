@@ -4,6 +4,7 @@ import { claimRepo } from '../../db/repositories/claim.repo.js';
 import { decodeCallback } from '../keyboards/callback.js';
 import { markClaimMessageDelivered } from '../notifications/admin-notifier.js';
 import { contentService } from '../../domain/content/content.service.js';
+import { formatStorePlace } from '../../domain/stores/store-display.js';
 import { isAdmin } from './guard.js';
 import { isUserUnreachable } from '../../infra/telegram-errors.js';
 import { userRepo } from '../../db/repositories/user.repo.js';
@@ -53,6 +54,7 @@ claimActions.on('callback_query', async (ctx, next) => {
       city: claim.store?.city.name ?? '',
       store: claim.store?.name ?? '—',
       address: claim.store?.address ?? '',
+      place: claim.store ? formatStorePlace(claim.store) : '—',
     },
     { campaignId: claim.campaignId },
   );

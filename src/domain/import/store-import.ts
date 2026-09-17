@@ -1,6 +1,7 @@
 import { prisma } from '../../db/client.js';
 import { parseTable, toRows } from './parse-table.js';
 import { looksHierarchical, parseHierarchy } from './parse-hierarchy.js';
+import { deriveStoreName } from '../stores/store-display.js';
 
 const COLUMNS = {
   city: ['місто', 'city', 'населений пункт', 'нас. пункт'],
@@ -9,10 +10,6 @@ const COLUMNS = {
 } as const;
 
 const OPTIONAL_COLUMNS = ['name'] as const;
-
-function deriveName(address: string): string {
-  return address.split(',')[0]?.trim() || address;
-}
 
 export type StoreImportPreview = {
   ok: true;
@@ -59,7 +56,7 @@ export async function previewStoreImport(
   for (const row of rows) {
     const city = row.city?.trim() ?? '';
     const address = row.address?.trim() ?? '';
-    const name = row.name?.trim() || deriveName(address);
+    const name = row.name?.trim() || deriveStoreName(address);
 
     if (!city || !address) {
       skipped++;
