@@ -41,15 +41,30 @@ function buildClaimMessage(claim: ClaimFull): string {
   return lines.join('\n');
 }
 
-async function deliverButton(claim: ClaimFull) {
-  return Markup.inlineKeyboard([
-    [
+/**
+ * Кнопки під заявкою.
+ * Після видачі «Приз доставлено» зникає, а написати людині все ще можна.
+ */
+export function claimKeyboard(claim: ClaimFull, options: { deliver: boolean }) {
+  const rows = [];
+
+  if (options.deliver) {
+    rows.push([
       Markup.button.callback(
         '✅ Приз доставлено',
         encodeCallback({ kind: 'deliver', claimId: claim.id }),
       ),
-    ],
+    ]);
+  }
+
+  rows.push([
+    Markup.button.callback(
+      '✍️ Написати переможцю',
+      encodeCallback({ kind: 'notifyWinner', claimId: claim.id }),
+    ),
   ]);
+
+  return Markup.inlineKeyboard(rows);
 }
 
 /**
@@ -70,7 +85,7 @@ export async function notifyAdminsAboutClaim(
   }
 
   const text = buildClaimMessage(claim);
-  const keyboard = await deliverButton(claim);
+  const keyboard = claimKeyboard(claim, { deliver: true });
   const threadId = claim.campaign.adminThreadId ?? undefined;
 
   const send = (thread?: number) =>
@@ -139,7 +154,7 @@ export async function markClaimMessageDelivered(
       claim.adminMessageId,
       undefined,
       text,
-      { parse_mode: 'HTML' },
+      { parse_mode: 'HTML', ...claimKeyboard(claim, { deliver: false }) },
     )
     .catch((error: unknown) => {
       logger.warn({ error, claimId: claim.id }, 'не вдалося оновити повідомлення');

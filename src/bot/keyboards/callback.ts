@@ -10,6 +10,7 @@ export type CallbackAction =
   | { kind: 'backToCities' }
   | { kind: 'chooseStore'; claimId: string }
   | { kind: 'deliver'; claimId: string }
+  | { kind: 'notifyWinner'; claimId: string }
   | { kind: 'received'; claimId: string }
   | { kind: 'consentAgree' }
   | { kind: 'confirm'; pendingId: PendingId }
@@ -36,6 +37,8 @@ export function encodeCallback(action: CallbackAction): string {
         return `cs${SEP}${action.claimId}`;
       case 'deliver':
         return `d${SEP}${action.claimId}`;
+      case 'notifyWinner':
+        return `w${SEP}${action.claimId}`;
       case 'received':
         return `r${SEP}${action.claimId}`;
       case 'consentAgree':
@@ -81,6 +84,8 @@ export function decodeCallback(raw: string): CallbackAction | undefined {
       return arg ? { kind: 'chooseStore', claimId: arg } : undefined;
     case 'd':
       return arg ? { kind: 'deliver', claimId: arg } : undefined;
+    case 'w':
+      return arg ? { kind: 'notifyWinner', claimId: arg } : undefined;
     case 'r':
       return arg ? { kind: 'received', claimId: arg } : undefined;
     case 'ok':

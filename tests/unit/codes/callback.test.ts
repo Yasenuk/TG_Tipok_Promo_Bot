@@ -16,6 +16,7 @@ describe('callback_data', () => {
     { kind: 'backToCities' },
     { kind: 'chooseStore', claimId: cuid },
     { kind: 'deliver', claimId: cuid },
+    { kind: 'notifyWinner', claimId: cuid },
     { kind: 'received', claimId: cuid },
     { kind: 'consentAgree' },
   ];

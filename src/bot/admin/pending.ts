@@ -5,7 +5,7 @@ import { asPendingId, type PendingId } from '../../shared/pending-id.js';
 
 export { asPendingId, type PendingId };
 
-export type PendingKind = 'draw' | 'stores' | 'codes' | 'campaign' | 'file';
+export type PendingKind = 'draw' | 'stores' | 'codes' | 'campaign' | 'file' | 'note';
 
 const TTL_MS = 10 * 60_000;
 
@@ -38,8 +38,13 @@ export async function putPending<T>(
   kind: PendingKind,
   ownerId: number,
   payload: T,
+  /** Власний id — коли запис треба знайти не за callback_data, а за чимось іншим */
+  customId?: PendingId,
 ): Promise<PendingId> {
-  const id = newId();
+  const id = customId ?? newId();
+
+  // Повторне натискання тієї ж кнопки просто оновлює запис
+  if (customId) await dropPending(customId);
 
   await prisma.pendingAction.create({
     data: {

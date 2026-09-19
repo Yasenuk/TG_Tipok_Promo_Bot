@@ -18,6 +18,7 @@ import { startHandler } from './handlers/start.handler.js';
 import { menuHandler } from './handlers/menu.handler.js';
 import { prizeHandler } from './handlers/prize.handler.js';
 import { claimActions } from './admin/claim-actions.js';
+import { notifyWinnerHandler } from './admin/notify-winner.handler.js';
 import { adminCommands } from './admin/commands.js';
 import { confirmHandler } from './admin/confirm.handler.js';
 import { drawHandler } from './admin/draw.handler.js';
@@ -64,6 +65,7 @@ export function createBot(): Telegraf<AppContext> {
   bot.use(errorHandlerMiddleware);
 
   bot.use(claimActions);
+  bot.use(notifyWinnerHandler);
   bot.use(confirmHandler);
   bot.use(adminCommands);
   bot.use(drawHandler);

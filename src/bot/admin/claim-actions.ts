@@ -2,7 +2,7 @@ import { Composer } from 'telegraf';
 import type { AppContext } from '../context.js';
 import { claimRepo } from '../../db/repositories/claim.repo.js';
 import { decodeCallback } from '../keyboards/callback.js';
-import { markClaimMessageDelivered } from '../notifications/admin-notifier.js';
+import { claimKeyboard, markClaimMessageDelivered } from '../notifications/admin-notifier.js';
 import { contentService } from '../../domain/content/content.service.js';
 import { formatStorePlace } from '../../domain/stores/store-display.js';
 import { isAdmin } from './guard.js';
@@ -32,8 +32,14 @@ claimActions.on('callback_query', async (ctx, next) => {
 
   if (!claim) {
     await ctx.answerCbQuery('Цю заявку вже закрито', { show_alert: true });
-    // Кнопку прибираємо: вона застаріла
-    await ctx.editMessageReplyMarkup(undefined).catch(() => undefined);
+
+    // Прибираємо застарілу кнопку видачі, але лишаємо «Написати переможцю»
+    const existing = await claimRepo.findById(action.claimId);
+    await ctx
+      .editMessageReplyMarkup(
+        existing ? claimKeyboard(existing, { deliver: false }).reply_markup : undefined,
+      )
+      .catch(() => undefined);
     return;
   }
 
