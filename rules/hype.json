@@ -6,7 +6,10 @@
         "thresholds": [
           { "at": 2, "prize": "opener" },
           { "at": 4, "prize": "mug" },
-          { "at": 6, "prize": "cap" }
+          { "at": 6, "prize": "cap" },
+          { "at": 8, "prize": "tote" },
+          { "at": 10, "prize": "power" },
+          { "at": 12, "prize": "umbrella" }
         ]
       }
     }

@@ -1,5 +1,8 @@
 [
-  { "key": "opener", "title": "Відкривачка", "stock": null },
-  { "key": "mug",    "title": "Кружка",      "stock": null },
-  { "key": "cap",    "title": "Кепка",       "stock": null }
+  { "key": "opener",   "title": "Відкривачка", "stock": null },
+  { "key": "mug",      "title": "Кружка",      "stock": null },
+  { "key": "cap",      "title": "Кепка",       "stock": null },
+  { "key": "tote",     "title": "Шопер",       "stock": null },
+  { "key": "power",    "title": "Повербанк",       "stock": null },
+  { "key": "umbrella", "title": "Парасоля",       "stock": null }
 ]
