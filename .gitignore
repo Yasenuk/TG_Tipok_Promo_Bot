@@ -6,3 +6,4 @@ src/generated/
 *.log
 coverage/
 .DS_Store
+exports/

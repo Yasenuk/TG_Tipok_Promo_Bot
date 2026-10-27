@@ -10,6 +10,10 @@ import { formatIsoDate } from '../../shared/datetime.js';
 import { invalidateContentCache } from '../../domain/content/content.service.js';
 import type { ContentKey } from '../../domain/content/keys.js';
 import { replyCampaignNotFound } from './campaign-helpers.js';
+import { parseTelegramError } from '../../infra/telegram-errors.js';
+
+const escapeHtml = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 export const adminCommands = new Composer<AppContext>();
 
@@ -187,20 +191,37 @@ adminCommands.command('export', async (ctx) => {
 
   await ctx.reply('Готую вигрузку…');
 
-  const workbook = await buildCampaignWorkbook(campaign.id);
-  const buffer = Buffer.from(await workbook.xlsx.writeBuffer());
+  const threadId = ctx.message.message_thread_id;
 
-  const stamp = formatIsoDate();
+  try {
+    const workbook = await buildCampaignWorkbook(campaign.id);
+    const buffer = Buffer.from(await workbook.xlsx.writeBuffer());
 
-  await ctx.replyWithDocument(
-    { source: buffer, filename: `${slug}-${stamp}.xlsx` },
-    {
-      caption:
-        `📊 ${campaign.title}\n\n` +
-        'Лист «Активації» — для розіграшу: 1 код = 1 рядок.',
-      ...(ctx.message.message_thread_id
-        ? { message_thread_id: ctx.message.message_thread_id }
-        : {}),
-    },
-  );
+    const stamp = formatIsoDate();
+
+    await ctx.replyWithDocument(
+      { source: buffer, filename: `${slug}-${stamp}.xlsx` },
+      {
+        caption:
+          `📊 ${campaign.title}\n\n` +
+          'Лист «Активації» — для розіграшу: 1 код = 1 рядок.',
+        ...(threadId ? { message_thread_id: threadId } : {}),
+      },
+    );
+  } catch (error) {
+    ctx.log?.error({ error, slug }, 'вигрузка не вдалася');
+
+    // Це адмінська команда — показуємо причину, а не «щось пішло не так»
+    const info = parseTelegramError(error);
+    const reason = info
+      ? `Telegram ${info.code}: ${info.description}`
+      : error instanceof Error
+        ? `${error.name}: ${error.message}`
+        : String(error);
+
+    await ctx.reply(`❌ Вигрузка не вдалася.\n\n<code>${escapeHtml(reason)}</code>`, {
+      parse_mode: 'HTML',
+      ...(threadId ? { message_thread_id: threadId } : {}),
+    });
+  }
 });
