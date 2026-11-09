@@ -13,7 +13,7 @@ describe('validateFullName', () => {
   });
 
   it('дозволяє дефіси й апострофи', () => {
-    expect(validateFullName("Кос-Анатольський Дмитро Іванович").ok).toBe(true);
+    expect(validateFullName('Кос-Анатольський Дмитро Іванович').ok).toBe(true);
     expect(validateFullName("Д'Артаньян Шарль").ok).toBe(true);
     expect(validateFullName('Мар’яненко Олена').ok).toBe(true);
   });

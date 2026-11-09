@@ -20,7 +20,9 @@ export async function replyCampaignNotFound(
   }
 
   const list = campaigns
-    .map((c) => `${c.status === 'ACTIVE' ? '🟢' : '⚪️'} <code>${c.slug}</code> — ${c.title}`)
+    .map(
+      (c) => `${c.status === 'ACTIVE' ? '🟢' : '⚪️'} <code>${c.slug}</code> — ${c.title}`,
+    )
     .join('\n');
 
   await ctx.reply(`❌ Кампанії «${slug}» немає.\n\n<b>Наявні:</b>\n${list}`, {

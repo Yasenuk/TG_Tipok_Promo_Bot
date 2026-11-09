@@ -69,7 +69,8 @@ adminsHandler.command('admin', async (ctx) => {
   if (targetId === undefined) {
     await ctx.reply(
       '❌ Не зрозуміло, кого саме.\n\n' +
-        'Відповідай на повідомлення людини або вкажи її id.\n\n' + USAGE,
+        'Відповідай на повідомлення людини або вкажи її id.\n\n' +
+        USAGE,
       { parse_mode: 'HTML' },
     );
     return;

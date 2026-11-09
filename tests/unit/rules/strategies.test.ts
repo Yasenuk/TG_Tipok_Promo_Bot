@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { evaluateAwards, validateCampaignRules } from '../../../src/domain/rules/engine.js';
+import {
+  evaluateAwards,
+  validateCampaignRules,
+} from '../../../src/domain/rules/engine.js';
 import { ctx, prize } from './helpers.js';
 
 describe('fixed-threshold', () => {
@@ -53,17 +56,26 @@ describe('instant-win', () => {
   const prizes = [prize('bottle')];
 
   it('виграє, коли random нижчий за шанс', () => {
-    const result = evaluateAwards(ctx(1, prizes, () => 0.01), rules);
+    const result = evaluateAwards(
+      ctx(1, prizes, () => 0.01),
+      rules,
+    );
     expect(result.awards.map((a) => a.prizeKey)).toEqual(['bottle']);
   });
 
   it('не виграє, коли random вищий', () => {
-    const result = evaluateAwards(ctx(1, prizes, () => 0.5), rules);
+    const result = evaluateAwards(
+      ctx(1, prizes, () => 0.5),
+      rules,
+    );
     expect(result.awards).toHaveLength(0);
   });
 
   it('межа chance не спрацьовує (>= означає програш)', () => {
-    const result = evaluateAwards(ctx(1, prizes, () => 0.05), rules);
+    const result = evaluateAwards(
+      ctx(1, prizes, () => 0.05),
+      rules,
+    );
     expect(result.awards).toHaveLength(0);
   });
 });
@@ -81,11 +93,11 @@ describe('композиція стратегій', () => {
     };
     const prizes = [prize('opener'), prize('bottle')];
 
-    const result = evaluateAwards(ctx(2, prizes, () => 0), rules);
-    expect(result.awards.map((a) => a.prizeKey).sort()).toEqual([
-      'bottle',
-      'opener',
-    ]);
+    const result = evaluateAwards(
+      ctx(2, prizes, () => 0),
+      rules,
+    );
+    expect(result.awards.map((a) => a.prizeKey).sort()).toEqual(['bottle', 'opener']);
   });
 });
 

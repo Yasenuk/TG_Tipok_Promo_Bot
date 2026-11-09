@@ -15,7 +15,7 @@ async function loadAdmins(): Promise<Map<string, AdminRole>> {
   const admins = new Map<string, AdminRole>(
     rows.map((a) => [a.telegramId.toString(), a.role]),
   );
-  
+
   for (const id of env.SUPER_ADMIN_IDS) {
     admins.set(id.toString(), 'SUPER');
   }

@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  findColumn,
-  parseCsv,
-  toRows,
-} from '../../../src/domain/import/parse-table.js';
+import { findColumn, parseCsv, toRows } from '../../../src/domain/import/parse-table.js';
 
 describe('parseCsv', () => {
   it('розбирає простий файл', () => {

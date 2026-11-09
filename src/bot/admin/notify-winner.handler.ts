@@ -23,7 +23,12 @@ const esc = (s: string): string =>
 const noteId = (chatId: number, messageId: number) =>
   asPendingId(`note_${chatId}_${messageId}`);
 
-function managerName(from: { first_name: string; last_name?: string; username?: string; id: number }): string {
+function managerName(from: {
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  id: number;
+}): string {
   return (
     [from.first_name, from.last_name].filter(Boolean).join(' ') ||
     (from.username ? `@${from.username}` : String(from.id))
@@ -156,5 +161,8 @@ notifyWinnerHandler.on(message('text'), async (ctx, next) => {
     `✉️ <b>${esc(managerName(ctx.from))}</b> написав(ла) переможцю:\n\n${esc(text)}`,
   );
 
-  ctx.log?.info({ claimId: claim.id, by: ctx.from.id }, 'повідомлення переможцю надіслано');
+  ctx.log?.info(
+    { claimId: claim.id, by: ctx.from.id },
+    'повідомлення переможцю надіслано',
+  );
 });

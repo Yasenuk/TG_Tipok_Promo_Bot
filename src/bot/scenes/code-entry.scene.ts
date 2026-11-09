@@ -17,7 +17,9 @@ codeEntryScene.enter(async (ctx) => {
   await ctx.reply_t(
     'code.ask',
     undefined,
-    Markup.keyboard([[cancel]]).resize().oneTime(),
+    Markup.keyboard([[cancel]])
+      .resize()
+      .oneTime(),
   );
 });
 
@@ -31,11 +33,7 @@ codeEntryScene.on(message('text'), async (ctx) => {
     return;
   }
 
-  const result = await codeService.activate(
-    text,
-    ctx.user.id,
-    BigInt(ctx.from.id),
-  );
+  const result = await codeService.activate(text, ctx.user.id, BigInt(ctx.from.id));
 
   if (!result.ok) {
     await replyCodeError(ctx, result.error);

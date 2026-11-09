@@ -14,7 +14,10 @@ import { formatIsoDate } from '../shared/datetime.js';
 if (existsSync('.env')) process.loadEnvFile('.env');
 
 function arg(name: string): string | undefined {
-  return process.argv.slice(2).find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3);
+  return process.argv
+    .slice(2)
+    .find((a) => a.startsWith(`--${name}=`))
+    ?.slice(name.length + 3);
 }
 
 async function main(): Promise<void> {

@@ -35,7 +35,7 @@ describe('callback_data', () => {
   });
 
   it('чужий або застарілий формат не розпізнається', () => {
-    expect(decodeCallback('9:c:abc')).toBeUndefined();  // інша версія
+    expect(decodeCallback('9:c:abc')).toBeUndefined(); // інша версія
     expect(decodeCallback('сміття')).toBeUndefined();
     expect(decodeCallback('')).toBeUndefined();
   });

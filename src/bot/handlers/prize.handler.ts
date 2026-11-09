@@ -9,12 +9,25 @@ import { formatStorePlace } from '../../domain/stores/store-display.js';
 
 export const prizeHandler = new Composer<AppContext>();
 
+async function removeClickedButton(ctx: AppContext, raw: string): Promise<void> {
+  const msg = ctx.callbackQuery!.message;
+  const rows =
+    msg && 'reply_markup' in msg ? (msg.reply_markup?.inline_keyboard ?? []) : [];
+  const rest = rows
+    .map((row) => row.filter((b) => !('callback_data' in b) || b.callback_data !== raw))
+    .filter((row) => row.length > 0);
+
+  await ctx
+    .editMessageReplyMarkup(rest.length ? { inline_keyboard: rest } : undefined)
+    .catch(() => undefined);
+}
+
 /** Кнопка «Обрати магазин» під повідомленням про виграш */
 prizeHandler.on('callback_query', async (ctx, next) => {
   const raw = 'data' in ctx.callbackQuery ? ctx.callbackQuery.data : undefined;
   const action = raw ? decodeCallback(raw) : undefined;
 
-  if (action?.kind !== 'chooseStore') return next();
+  if (!raw || action?.kind !== 'chooseStore') return next();
 
   await ctx.answerCbQuery();
 
@@ -28,7 +41,7 @@ prizeHandler.on('callback_query', async (ctx, next) => {
 
   // Магазин уже обрано
   if (claim.status !== 'AWAITING_STORE') {
-    await ctx.editMessageReplyMarkup(undefined).catch(() => undefined);
+    await removeClickedButton(ctx, raw);
     await ctx.reply_t('prize.confirmed', {
       store: claim.store?.name ?? '—',
       city: claim.store?.city.name ?? '',
@@ -38,7 +51,7 @@ prizeHandler.on('callback_query', async (ctx, next) => {
     return;
   }
 
-  await ctx.editMessageReplyMarkup(undefined).catch(() => undefined);
+  await removeClickedButton(ctx, raw);
   await ctx.scene.enter(STORE_SELECT_SCENE, { claimId: claim.id });
 });
 

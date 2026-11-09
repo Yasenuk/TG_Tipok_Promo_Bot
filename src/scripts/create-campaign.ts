@@ -84,12 +84,14 @@ async function main(): Promise<void> {
       },
     });
   }
-  
+
   const prizeKeys = new Set(
-    (await prisma.prize.findMany({
-      where: { campaignId: campaign.id },
-      select: { key: true },
-    })).map((p) => p.key),
+    (
+      await prisma.prize.findMany({
+        where: { campaignId: campaign.id },
+        select: { key: true },
+      })
+    ).map((p) => p.key),
   );
 
   const referenced = new Set<string>();

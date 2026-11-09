@@ -24,10 +24,7 @@ export async function connectWithRetry(attempts = 5): Promise<void> {
       return;
     } catch (error) {
       if (attempt === attempts) {
-        logger.fatal(
-          { error },
-          'База недоступна',
-        );
+        logger.fatal({ error }, 'База недоступна');
         throw error;
       }
 

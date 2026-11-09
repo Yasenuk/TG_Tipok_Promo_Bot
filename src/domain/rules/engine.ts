@@ -24,10 +24,7 @@ export function validateCampaignRules(raw: unknown): CampaignRules {
   return rules;
 }
 
-export function evaluateAwards(
-  ctx: RuleContext,
-  rules: CampaignRules,
-): StrategyResult {
+export function evaluateAwards(ctx: RuleContext, rules: CampaignRules): StrategyResult {
   const raw: RuleAward[] = [];
 
   for (const entry of rules.strategies) {

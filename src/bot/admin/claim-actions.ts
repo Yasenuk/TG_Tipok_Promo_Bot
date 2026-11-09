@@ -2,7 +2,10 @@ import { Composer } from 'telegraf';
 import type { AppContext } from '../context.js';
 import { claimRepo } from '../../db/repositories/claim.repo.js';
 import { decodeCallback } from '../keyboards/callback.js';
-import { claimKeyboard, markClaimMessageDelivered } from '../notifications/admin-notifier.js';
+import {
+  claimKeyboard,
+  markClaimMessageDelivered,
+} from '../notifications/admin-notifier.js';
 import { contentService } from '../../domain/content/content.service.js';
 import { formatStorePlace } from '../../domain/stores/store-display.js';
 import { isAdmin } from './guard.js';

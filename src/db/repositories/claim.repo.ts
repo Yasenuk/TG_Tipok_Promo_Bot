@@ -1,5 +1,12 @@
 import { prisma } from '../client.js';
-import type { Campaign, Prize, PrizeClaim, Store, User, City } from '../../generated/prisma/client.js';
+import type {
+  Campaign,
+  Prize,
+  PrizeClaim,
+  Store,
+  User,
+  City,
+} from '../../generated/prisma/client.js';
 
 export type ClaimFull = PrizeClaim & {
   user: User;
@@ -58,10 +65,7 @@ export const claimRepo = {
   /**
    * Позначити доставленим
    */
-  async markDelivered(
-    claimId: string,
-    byTelegramId: bigint,
-  ): Promise<ClaimFull | null> {
+  async markDelivered(claimId: string, byTelegramId: bigint): Promise<ClaimFull | null> {
     const updated = await prisma.prizeClaim.updateMany({
       where: { id: claimId, status: 'AWAITING_DELIVERY' },
       data: {
@@ -95,6 +99,29 @@ export const claimRepo = {
     return prisma.prizeClaim.update({
       where: { id: claimId },
       data: { status: 'RECEIVED', receivedAt: new Date() },
+    });
+  },
+
+  listForStoreReminder(campaignId: string, cooldownMs: number) {
+    const cutoff = new Date(Date.now() - cooldownMs);
+    return prisma.prizeClaim.findMany({
+      where: {
+        campaignId,
+        status: 'AWAITING_STORE',
+        user: { isBlocked: false },
+        OR: [{ remindedAt: null }, { remindedAt: { lt: cutoff } }],
+        // переможців, яким ще не пішов draw.winner, не чіпаємо
+        NOT: { drawWinner: { is: { notifiedAt: null } } },
+      },
+      include: { user: true, prize: true },
+      orderBy: { createdAt: 'asc' },
+    });
+  },
+
+  markReminded(ids: string[]) {
+    return prisma.prizeClaim.updateMany({
+      where: { id: { in: ids } },
+      data: { remindedAt: new Date() },
     });
   },
 };

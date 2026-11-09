@@ -55,7 +55,9 @@ campaignHandler.command('campaign', async (ctx) => {
 
   const status = ACTIONS[action];
   if (!status) {
-    await ctx.reply(`❌ Невідома дія «${action}». Доступні: activate, pause, finish, draft`);
+    await ctx.reply(
+      `❌ Невідома дія «${action}». Доступні: activate, pause, finish, draft`,
+    );
     return;
   }
 

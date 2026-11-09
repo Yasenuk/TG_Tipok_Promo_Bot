@@ -22,7 +22,8 @@ export const adminCommands = new Composer<AppContext>();
  */
 adminCommands.command('chatid', async (ctx) => {
   const chat = ctx.chat;
-  const threadId = 'message_thread_id' in ctx.message ? ctx.message.message_thread_id : undefined;
+  const threadId =
+    'message_thread_id' in ctx.message ? ctx.message.message_thread_id : undefined;
   const isForum = 'is_forum' in chat ? chat.is_forum : false;
 
   const lines = [
@@ -42,10 +43,7 @@ adminCommands.command('chatid', async (ctx) => {
     lines.push('', '⚠️ Топіки вимкнені. Увімкни їх у налаштуваннях групи.');
   }
   if (chat.type === 'group') {
-    lines.push(
-      '',
-      '⚠️ Це звичайна група, топіки тут недоступні.',
-    );
+    lines.push('', '⚠️ Це звичайна група, топіки тут недоступні.');
   }
 
   await ctx.reply(lines.join('\n'), { parse_mode: 'HTML' });
@@ -65,9 +63,7 @@ adminCommands.command('bind_topic', async (ctx) => {
 
   const threadId = ctx.message.message_thread_id;
   if (!threadId) {
-    await ctx.reply(
-      'Виконай цю команду всередині топіка кампанії.',
-    );
+    await ctx.reply('Виконай цю команду всередині топіка кампанії.');
     return;
   }
 

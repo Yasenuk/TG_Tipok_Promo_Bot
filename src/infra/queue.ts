@@ -65,10 +65,7 @@ export async function broadcast<T>(
   return result;
 }
 
-async function sendWithRetry<T>(
-  task: BroadcastTask<T>,
-  attempt = 1,
-): Promise<void> {
+async function sendWithRetry<T>(task: BroadcastTask<T>, attempt = 1): Promise<void> {
   try {
     await task.send();
   } catch (error) {

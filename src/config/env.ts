@@ -90,14 +90,7 @@ function loadEnv(): Env {
     : `⚠️  Файл .env НЕ знайдено за шляхом ${ENV_FILE}\n`;
 
   console.error(
-    [
-      '',
-      '❌ Некоректна конфігурація оточення:',
-      issues,
-      '',
-      hint,
-      '',
-    ].join('\n'),
+    ['', '❌ Некоректна конфігурація оточення:', issues, '', hint, ''].join('\n'),
   );
   process.exit(1);
 }

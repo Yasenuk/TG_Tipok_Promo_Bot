@@ -13,27 +13,30 @@ describe('cyclic-threshold (механіка Hype)', () => {
   it('видає відкривачку на 2, 8, 14', () => {
     for (const count of [2, 8, 14]) {
       const result = evaluateAwards(ctx(count, HYPE_PRIZES), HYPE_RULES);
-      expect(result.awards.map((a) => a.prizeKey), `count=${count}`).toEqual([
-        'opener',
-      ]);
+      expect(
+        result.awards.map((a) => a.prizeKey),
+        `count=${count}`,
+      ).toEqual(['opener']);
     }
   });
 
   it('видає кружку на 4, 10, 16', () => {
     for (const count of [4, 10, 16]) {
       const result = evaluateAwards(ctx(count, HYPE_PRIZES), HYPE_RULES);
-      expect(result.awards.map((a) => a.prizeKey), `count=${count}`).toEqual([
-        'mug',
-      ]);
+      expect(
+        result.awards.map((a) => a.prizeKey),
+        `count=${count}`,
+      ).toEqual(['mug']);
     }
   });
 
   it('видає кепку на 6, 12, 18 (залишок 0)', () => {
     for (const count of [6, 12, 18]) {
       const result = evaluateAwards(ctx(count, HYPE_PRIZES), HYPE_RULES);
-      expect(result.awards.map((a) => a.prizeKey), `count=${count}`).toEqual([
-        'cap',
-      ]);
+      expect(
+        result.awards.map((a) => a.prizeKey),
+        `count=${count}`,
+      ).toEqual(['cap']);
     }
   });
 

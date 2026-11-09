@@ -22,9 +22,7 @@ async function main(): Promise<void> {
       logger.info({ signal }, 'Завершуємось');
       try {
         bot.stop(signal);
-      } catch {
-        
-      }
+      } catch {}
       await disconnect();
       process.exit(0);
     })();

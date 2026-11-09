@@ -34,9 +34,7 @@ function buildClaimMessage(claim: ClaimFull): string {
   }
 
   lines.push('');
-  lines.push(
-    `🕐 ${formatDateTime(claim.createdAt)}`,
-  );
+  lines.push(`🕐 ${formatDateTime(claim.createdAt)}`);
 
   return lines.join('\n');
 }
@@ -119,11 +117,7 @@ export async function notifyAdminsAboutClaim(
 
     try {
       const fallback = await send(undefined);
-      await claimRepo.rememberAdminMessage(
-        claim.id,
-        chatId,
-        fallback.message_id,
-      );
+      await claimRepo.rememberAdminMessage(claim.id, chatId, fallback.message_id);
     } catch (fallbackError) {
       logger.error(
         { error: fallbackError, claimId: claim.id },

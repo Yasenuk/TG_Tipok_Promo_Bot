@@ -37,7 +37,11 @@ describe('formatStore', () => {
 
 describe('formatStorePlace', () => {
   it('додає місто спереду', () => {
-    const store = { name: 'вул. Ринок', address: 'вул. Ринок, 10', city: { name: 'м. Чортків' } };
+    const store = {
+      name: 'вул. Ринок',
+      address: 'вул. Ринок, 10',
+      city: { name: 'м. Чортків' },
+    };
     expect(formatStorePlace(store)).toBe('м. Чортків, вул. Ринок, 10');
   });
 });

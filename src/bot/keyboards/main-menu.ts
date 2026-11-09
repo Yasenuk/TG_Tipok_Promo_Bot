@@ -10,11 +10,7 @@ export async function mainMenuKeyboard() {
     contentService.t('button.rules'),
   ]);
 
-  return Markup.keyboard([
-    [enterCode],
-    [myProgress, myPrizes],
-    [rules],
-  ]).resize();
+  return Markup.keyboard([[enterCode], [myProgress, myPrizes], [rules]]).resize();
 }
 
 export async function phoneRequestKeyboard() {
@@ -26,7 +22,5 @@ export async function phoneRequestKeyboard() {
 
 export async function consentKeyboard() {
   const agree = await contentService.t('button.consent_agree');
-  return Markup.inlineKeyboard([
-    [Markup.button.callback(agree, 'consent:agree')],
-  ]);
+  return Markup.inlineKeyboard([[Markup.button.callback(agree, 'consent:agree')]]);
 }

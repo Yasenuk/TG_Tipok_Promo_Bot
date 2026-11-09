@@ -10,7 +10,13 @@ import {
 function generatorLikeTable(count: number): string[][] {
   const rows: string[][] = [
     ['Генератор унікальних кодів', '', '', 'Загальна кількість:', String(count)],
-    ['Формат: 5 великих літер + 5 цифр (наприклад, AAAAA11111)', '', '', 'Унікальних кодів:', String(count)],
+    [
+      'Формат: 5 великих літер + 5 цифр (наприклад, AAAAA11111)',
+      '',
+      '',
+      'Унікальних кодів:',
+      String(count),
+    ],
     ['№', 'Унікальний код', 'Довжина', 'Формат', 'Статус'],
   ];
   for (let i = 1; i <= count; i++) {
@@ -43,7 +49,12 @@ describe('pickCodeColumn', () => {
   });
 
   it('-1, якщо кодів немає', () => {
-    expect(pickCodeColumn([['№', 'Назва'], ['1', 'Київ']])).toBe(-1);
+    expect(
+      pickCodeColumn([
+        ['№', 'Назва'],
+        ['1', 'Київ'],
+      ]),
+    ).toBe(-1);
     expect(pickCodeColumn([])).toBe(-1);
   });
 });

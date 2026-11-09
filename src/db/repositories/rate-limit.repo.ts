@@ -1,8 +1,7 @@
 import { prisma } from '../client.js';
 
 export type RateLimitVerdict =
-  | { allowed: true }
-  | { allowed: false; retryAfterSec: number };
+  { allowed: true } | { allowed: false; retryAfterSec: number };
 
 /**
  * Ліміт на ввід кодів — у БД, на відміну від загального flood-control
@@ -25,8 +24,7 @@ export const rateLimitRepo = {
       };
     }
 
-    const windowExpired =
-      !entry || now.getTime() - entry.windowAt.getTime() > windowMs;
+    const windowExpired = !entry || now.getTime() - entry.windowAt.getTime() > windowMs;
 
     if (windowExpired) {
       await prisma.rateLimitEntry.upsert({
@@ -54,8 +52,6 @@ export const rateLimitRepo = {
 
   /** Успішний ввід скидає лічильник */
   async reset(key: string): Promise<void> {
-    await prisma.rateLimitEntry
-      .delete({ where: { key } })
-      .catch(() => undefined);
+    await prisma.rateLimitEntry.delete({ where: { key } }).catch(() => undefined);
   },
 };

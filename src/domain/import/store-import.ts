@@ -22,7 +22,6 @@ export type StoreImportPreview = {
   hierarchical: boolean;
 };
 
-
 export type StoreImportError = {
   ok: false;
   reason: 'empty' | 'missing_columns';

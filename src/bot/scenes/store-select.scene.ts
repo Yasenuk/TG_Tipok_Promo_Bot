@@ -22,9 +22,7 @@ type StoreSceneState = {
 const state = (ctx: AppContext): StoreSceneState =>
   ctx.scene.session.state as StoreSceneState;
 
-export const storeSelectScene = new Scenes.BaseScene<AppContext>(
-  STORE_SELECT_SCENE,
-);
+export const storeSelectScene = new Scenes.BaseScene<AppContext>(STORE_SELECT_SCENE);
 
 storeSelectScene.enter(async (ctx) => {
   const s = state(ctx);
@@ -106,9 +104,7 @@ async function showStores(ctx: AppContext, page: number): Promise<void> {
       page,
       encodeItem: (id) => encodeCallback({ kind: 'store', storeId: id }),
       encodePage: (p) => encodeCallback({ kind: 'storePage', page: p }),
-      footer: [
-        Markup.button.callback(back, encodeCallback({ kind: 'backToCities' })),
-      ],
+      footer: [Markup.button.callback(back, encodeCallback({ kind: 'backToCities' }))],
     },
   );
 
@@ -117,8 +113,7 @@ async function showStores(ctx: AppContext, page: number): Promise<void> {
 }
 
 storeSelectScene.on('callback_query', async (ctx) => {
-  const raw =
-    'data' in ctx.callbackQuery ? ctx.callbackQuery.data : undefined;
+  const raw = 'data' in ctx.callbackQuery ? ctx.callbackQuery.data : undefined;
   const action = raw ? decodeCallback(raw) : undefined;
 
   if (!action) {

@@ -24,5 +24,4 @@ export type UserError =
 
 export type AppError = CodeError | ClaimError | PrizeError | UserError;
 
-export const isUserFacing = (e: AppError): boolean =>
-  !e.type.startsWith('claim.');
+export const isUserFacing = (e: AppError): boolean => !e.type.startsWith('claim.');

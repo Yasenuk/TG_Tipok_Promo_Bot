@@ -41,7 +41,10 @@ function confirmKeyboard(pendingId: PendingId) {
   return Markup.inlineKeyboard([
     [
       Markup.button.callback('✅ Залити', encodeCallback({ kind: 'confirm', pendingId })),
-      Markup.button.callback('✖️ Скасувати', encodeCallback({ kind: 'cancel', pendingId })),
+      Markup.button.callback(
+        '✖️ Скасувати',
+        encodeCallback({ kind: 'cancel', pendingId }),
+      ),
     ],
   ]);
 }
@@ -67,11 +70,7 @@ importHandler.on(message('document'), async (ctx, next) => {
 
   const [command, ...args] = caption.split(/\s+/);
 
-  const downloaded = await downloadDocument(
-    ctx.telegram,
-    doc.file_id,
-    doc.file_size,
-  );
+  const downloaded = await downloadDocument(ctx.telegram, doc.file_id, doc.file_size);
 
   if (!downloaded.ok) {
     await ctx.reply(
@@ -114,32 +113,29 @@ async function askWhatToDo(
     fileName,
   });
 
-  await ctx.reply(
-    `📎 <b>${fileName}</b>\n\nЩо з ним зробити?`,
-    {
-      parse_mode: 'HTML',
-      ...Markup.inlineKeyboard([
-        [
-          Markup.button.callback(
-            '📍 Магазини',
-            encodeCallback({ kind: 'fileAs', pendingId, target: 'stores' }),
-          ),
-        ],
-        [
-          Markup.button.callback(
-            '🎟 Коди',
-            encodeCallback({ kind: 'fileAs', pendingId, target: 'codes' }),
-          ),
-        ],
-        [
-          Markup.button.callback(
-            '✖️ Нічого',
-            encodeCallback({ kind: 'cancel', pendingId }),
-          ),
-        ],
-      ]),
-    },
-  );
+  await ctx.reply(`📎 <b>${fileName}</b>\n\nЩо з ним зробити?`, {
+    parse_mode: 'HTML',
+    ...Markup.inlineKeyboard([
+      [
+        Markup.button.callback(
+          '📍 Магазини',
+          encodeCallback({ kind: 'fileAs', pendingId, target: 'stores' }),
+        ),
+      ],
+      [
+        Markup.button.callback(
+          '🎟 Коди',
+          encodeCallback({ kind: 'fileAs', pendingId, target: 'codes' }),
+        ),
+      ],
+      [
+        Markup.button.callback(
+          '✖️ Нічого',
+          encodeCallback({ kind: 'cancel', pendingId }),
+        ),
+      ],
+    ]),
+  });
 }
 
 importHandler.on('callback_query', async (ctx, next) => {
@@ -201,10 +197,7 @@ async function handleFileAs(
   if (campaigns.length === 0) {
     await ctx.answerCbQuery();
     await ctx.editMessageReplyMarkup(undefined).catch(() => undefined);
-    await ctx.reply(
-      '❌ Кампаній ще немає',
-      { parse_mode: 'HTML' },
-    );
+    await ctx.reply('❌ Кампаній ще немає', { parse_mode: 'HTML' });
     return;
   }
 
@@ -323,7 +316,7 @@ async function handleStores(
   if (preview.duplicates) lines.push(`⚠️ Дублів у файлі: ${preview.duplicates}`);
   if (preview.skipped) lines.push(`⚠️ Пропущено неповних рядків: ${preview.skipped}`);
 
-   if (preview.citiesWithoutAddress.length) {
+  if (preview.citiesWithoutAddress.length) {
     lines.push(
       '',
       `<b>Міст без адрес: ${preview.citiesWithoutAddress.length}</b>`,

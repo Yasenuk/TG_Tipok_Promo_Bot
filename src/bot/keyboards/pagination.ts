@@ -17,10 +17,7 @@ export type PaginationOptions = {
 /**
  * Універсальна пагінація інлайн-кнопок
  */
-export function paginatedKeyboard(
-  items: PaginatedItem[],
-  options: PaginationOptions,
-) {
+export function paginatedKeyboard(items: PaginatedItem[], options: PaginationOptions) {
   const size = options.pageSize ?? PAGE_SIZE;
   const totalPages = Math.max(1, Math.ceil(items.length / size));
   const page = Math.min(Math.max(options.page, 0), totalPages - 1);

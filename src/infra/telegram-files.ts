@@ -3,8 +3,7 @@ import type { Telegram } from 'telegraf';
 export const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
 export type DownloadResult =
-  | { ok: true; buffer: Buffer }
-  | { ok: false; reason: 'too_large' | 'download_failed' };
+  { ok: true; buffer: Buffer } | { ok: false; reason: 'too_large' | 'download_failed' };
 
 /**
  * Завантаження документа, надісланого в чат

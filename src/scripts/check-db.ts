@@ -23,12 +23,12 @@ function describe(url: string | undefined, label: string): void {
     console.log(`  host:     ${parsed.hostname}`);
     console.log(`  database: ${parsed.pathname.slice(1)}`);
     console.log(`  sslmode:  ${sslmode ?? '(не вказано)'}`);
-    console.log(`  провайдер: ${isNeon ? `Neon${isPooled ? ' (pooled)' : ' (direct)'}` : 'звичайний Postgres'}`);
+    console.log(
+      `  провайдер: ${isNeon ? `Neon${isPooled ? ' (pooled)' : ' (direct)'}` : 'звичайний Postgres'}`,
+    );
 
     if (isNeon && sslmode === 'require' && libpq !== 'true') {
-      console.log(
-        `  ⚠️  pg ≥ 8.22 sslmode=require як verify-full`,
-      );
+      console.log(`  ⚠️  pg ≥ 8.22 sslmode=require як verify-full`);
     }
   } catch {
     console.log(`${label}: ⚠️ не схоже на валідний URL`);

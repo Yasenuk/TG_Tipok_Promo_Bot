@@ -111,10 +111,7 @@ drawHandler.command('draw', async (ctx) => {
   ];
 
   if (plan.winners.length < totalPrizes) {
-    lines.push(
-      `⚠️ Призначено ${plan.winners.length} з ${totalPrizes}`,
-      '',
-    );
+    lines.push(`⚠️ Призначено ${plan.winners.length} з ${totalPrizes}`, '');
   }
 
   lines.push('🏆 <b>Переможці:</b>');
@@ -188,10 +185,7 @@ drawHandler.command('prizes', async (ctx) => {
 /**
  * Фіксація розіграшу + одразу розсилка переможцям
  */
-export async function confirmDraw(
-  ctx: AppContext,
-  pendingId: PendingId,
-): Promise<void> {
+export async function confirmDraw(ctx: AppContext, pendingId: PendingId): Promise<void> {
   const taken = await takePending<DrawPending>('draw', pendingId, ctx.from!.id);
 
   if (!taken.ok) {
@@ -209,12 +203,7 @@ export async function confirmDraw(
 
   const { campaignId, campaignTitle, name, plan } = taken.payload;
 
-  const drawId = await drawService.commit(
-    campaignId,
-    name,
-    plan,
-    BigInt(ctx.from!.id),
-  );
+  const drawId = await drawService.commit(campaignId, name, plan, BigInt(ctx.from!.id));
 
   await ctx.reply(
     `✅ Розіграш зафіксовано\n\n` +

@@ -8,7 +8,10 @@ import { drawService } from '../domain/draw/draw.service.js';
 if (existsSync('.env')) process.loadEnvFile('.env');
 
 const arg = (n: string) =>
-  process.argv.slice(2).find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3);
+  process.argv
+    .slice(2)
+    .find((a) => a.startsWith(`--${n}=`))
+    ?.slice(n.length + 3);
 
 async function main(): Promise<void> {
   await connectWithRetry();

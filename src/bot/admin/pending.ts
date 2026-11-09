@@ -5,13 +5,13 @@ import { asPendingId, type PendingId } from '../../shared/pending-id.js';
 
 export { asPendingId, type PendingId };
 
-export type PendingKind = 'draw' | 'stores' | 'codes' | 'campaign' | 'file' | 'note';
+export type PendingKind =
+  'draw' | 'stores' | 'codes' | 'campaign' | 'file' | 'note' | 'remind';
 
 const TTL_MS = 10 * 60_000;
 
 export type TakeResult<T> =
-  | { ok: true; payload: T }
-  | { ok: false; reason: 'expired' | 'not_owner' };
+  { ok: true; payload: T } | { ok: false; reason: 'expired' | 'not_owner' };
 
 function newId(): PendingId {
   return asPendingId(randomBytes(4).toString('hex'));
@@ -59,9 +59,7 @@ export async function putPending<T>(
   return id;
 }
 
-export async function peekPendingKind(
-  id: PendingId,
-): Promise<PendingKind | undefined> {
+export async function peekPendingKind(id: PendingId): Promise<PendingKind | undefined> {
   const entry = await prisma.pendingAction.findUnique({ where: { id } });
 
   if (!entry) return undefined;
@@ -112,10 +110,7 @@ export async function takePending<T>(
   return { ok: true, payload: deserialize<T>(entry.payload) };
 }
 
-export async function overwritePending<T>(
-  id: PendingId,
-  payload: T,
-): Promise<void> {
+export async function overwritePending<T>(id: PendingId, payload: T): Promise<void> {
   await prisma.pendingAction
     .update({
       where: { id },

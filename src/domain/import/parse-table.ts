@@ -67,7 +67,8 @@ export async function parseXlsx(buffer: Buffer): Promise<string[][]> {
 
       if (v === null || v === undefined) values.push('');
       else if (typeof v === 'object' && 'text' in v) values.push(String(v.text).trim());
-      else if (typeof v === 'object' && 'result' in v) values.push(String(v.result ?? '').trim());
+      else if (typeof v === 'object' && 'result' in v)
+        values.push(String(v.result ?? '').trim());
       else values.push(String(v).trim());
     });
 
@@ -77,10 +78,7 @@ export async function parseXlsx(buffer: Buffer): Promise<string[][]> {
   return rows;
 }
 
-export async function parseTable(
-  buffer: Buffer,
-  fileName: string,
-): Promise<string[][]> {
+export async function parseTable(buffer: Buffer, fileName: string): Promise<string[][]> {
   const lower = fileName.toLowerCase();
 
   if (lower.endsWith('.xlsx') || lower.endsWith('.xls')) {
@@ -121,7 +119,10 @@ export function toRows(
 ): { rows: TableRow[]; missing: string[] } {
   const [header, ...body] = table;
   if (!header) {
-    return { rows: [], missing: Object.keys(columns).filter((k) => !optional.includes(k)) };
+    return {
+      rows: [],
+      missing: Object.keys(columns).filter((k) => !optional.includes(k)),
+    };
   }
 
   const indexes: Record<string, number> = {};
